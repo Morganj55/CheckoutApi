@@ -5,7 +5,7 @@ using PaymentGateway.Api.Services;
 
 namespace PaymentGateway.Api.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
 [ApiController]
 public class PaymentsController : Controller
 {
@@ -19,7 +19,7 @@ public class PaymentsController : Controller
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<PostPaymentResponse?>> GetPaymentAsync(Guid id)
     {
-        var payment = _paymentsRepository.Get(id);
+        var payment = await _paymentsRepository.Get(id);
 
         return new OkObjectResult(payment);
     }
