@@ -1,4 +1,10 @@
+using Microsoft.AspNetCore.Routing;
+
+using PaymentGateway.Api.Clients;
+using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Services;
+using PaymentGateway.Api.Utility;
+using PaymentGateway.Api.Validation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +17,12 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<IPaymentRepository, PaymentsRepository>();
 builder.Services.AddSingleton<IPaymentService, PaymentService>();
-
+builder.Services.AddHttpClient<IAquiringBankClient, ExampleBank>((sp, http) =>
+{
+    var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<BankOptions>>().Value;
+    http.BaseAddress = new Uri(opts.BaseUrl);
+    http.Timeout = TimeSpan.FromSeconds(5);
+});
 
 var app = builder.Build();
 

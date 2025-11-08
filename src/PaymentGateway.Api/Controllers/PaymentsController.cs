@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
+using PaymentGateway.Api.Domain;
 using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Services;
@@ -27,9 +28,31 @@ public class PaymentsController : Controller
     }
 
     [HttpPost]
-    public async Task<ActionResult<PostPaymentResponse>> PostPaymentAsync([FromBody] PostPaymentRequest paymentRequest)
+    public async Task<ActionResult<PostPaymentResponse>> PostPaymentAsync([FromBody] PostPaymentRequest request)
     {
-        var res = await _payService.ProcessPaymentAsync(paymentRequest);
-        return new OkObjectResult(res);
+        if (!PaymentRequestCommand.TryCreate(request.CardNumber,
+                request.ExpiryMonth,
+                request.ExpiryYear,
+                request.Currency,
+                request.Amount,
+                request.Cvv,
+                out PaymentRequestCommand payRequest,
+                out var errors))
+        {
+            return BadRequest(errors);
+        }
+
+        var res = await _payService.ProcessPaymentAsync(payRequest);
+
+        return new OkObjectResult(new PostPaymentResponse
+        {
+            Id = res.Id,
+            Amount = res.Amount,
+            Currency = res.Currency,
+            CardNumberLastFour = res.CardNumberLastFour,
+            ExpiryMonth = res.ExpiryMonth,
+            ExpiryYear = res.ExpiryYear,
+            Status = res.Status
+        });
     }
 }

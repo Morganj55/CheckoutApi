@@ -1,4 +1,5 @@
-﻿using PaymentGateway.Api.Models.Responses;
+﻿using PaymentGateway.Api.Domain;
+using PaymentGateway.Api.Models.Responses;
 
 namespace PaymentGateway.Api.Services
 {
@@ -14,14 +15,19 @@ namespace PaymentGateway.Api.Services
         /// Adds a payment response to the collection for further processing or storage.
         /// </summary>
         /// <param name="payment">The payment response to add. Cannot be null.</param>
-        void Add(PostPaymentResponse payment);
+        void Add(PaymentRequestResponse payment);
 
         /// <summary>
         /// Retrieves the payment response associated with the specified identifier.
         /// </summary>
         /// <param name="id">The unique identifier of the payment to retrieve.</param>
-        /// <returns>A <see cref="PostPaymentResponse"/> object containing the details of the payment. Returns <see
+        /// <returns>A <see cref="PaymentRequestResponse"/> object containing the details of the payment. Returns <see
         /// langword="null"/> if no payment is found with the specified identifier.</returns>
-        PostPaymentResponse Get(Guid id);
+        PaymentRequestResponse Get(Guid id);
+
+        /// <summary>
+        /// Gets the total number of payments processed.
+        /// </summary>
+        int TotalPaymentCount { get; }
     }
 }

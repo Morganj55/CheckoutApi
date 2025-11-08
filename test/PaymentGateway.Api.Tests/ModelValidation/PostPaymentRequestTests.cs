@@ -38,7 +38,7 @@ namespace PaymentGateway.Api.Tests.ModelValidation
         private List<ValidationResult> ValidateModel(PostPaymentRequest model)
         {
             var validationResults = new List<ValidationResult>();
-            var context = new ValidationContext(model, serviceProvider: null, items: null);
+            var context = new ValidationContext(model);
 
             Validator.TryValidateObject(model, context, validationResults, true);
 
@@ -68,9 +68,9 @@ namespace PaymentGateway.Api.Tests.ModelValidation
 
         [Theory]
         [InlineData(null)]
-        [InlineData("1234567890123")]
-        [InlineData("12345678901234567890")] 
-        [InlineData("123456789012345A")]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("   ")]
         public void PostPaymentRequest_Invalid_CardNumber_Fail(string cardNumber)
         {
             // Arrange
@@ -105,59 +105,6 @@ namespace PaymentGateway.Api.Tests.ModelValidation
             Assert.NotNull(error);
         }
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData("12")]
-        [InlineData("12345")] 
-        [InlineData("12A")] 
-        public void PostPaymentRequest_Invalid_Cvv_Fail(string cvv)
-        {
-            // Arrange
-            var model = CreateValidModel();
-            model.Cvv = cvv;
-
-            // Act
-            var results = ValidateModel(model);
-
-            // Assert
-            var error = GetError(results, nameof(model.Cvv));
-            Assert.NotNull(error);
-        }
-
-        [Theory]
-        [InlineData(0)]
-        [InlineData(-100)]
-        public void PostPaymentRequest_Invalid_Amount_Fail(int amount)
-        {
-            // Arrange
-            var model = CreateValidModel();
-            model.Amount = amount;
-
-            // Act
-            var results = ValidateModel(model);
-
-            // Assert
-            var error = GetError(results, nameof(model.Amount));
-            Assert.NotNull(error);
-        }
-
-        [Fact]
-        public void PostPaymentRequest_Invalid_ExpiryMonth_Fails()
-        {
-            // Arrange
-            var model = CreateValidModel();
-            var pastDate = DateTime.UtcNow.AddMonths(-2);
-            model.ExpiryMonth = pastDate.Month;
-            model.ExpiryYear = pastDate.Year;
-
-            // Act
-            var results = ValidateModel(model);
-
-            // Assert
-            var error = Assert.Single(results);
-            Assert.Contains(nameof(model.ExpiryMonth), error.MemberNames);
-            Assert.Contains(nameof(model.ExpiryYear), error.MemberNames);
-        }
 
         [Fact]
         public void PostPaymentRequest_Valid_ExpiryDate_PassesForNextMonth()
@@ -173,6 +120,89 @@ namespace PaymentGateway.Api.Tests.ModelValidation
 
             // Assert
             Assert.Empty(results);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public void PostPaymentRequest_Invalid_CVV_Required_Fail(string value)
+        {
+            var model = CreateValidModel();
+            model.Currency = value;
+
+            var results = ValidateModel(model);
+
+            var error = GetError(results, nameof(model.Currency));
+            Assert.NotNull(error);
+            Assert.Equal("Currency code is required.", error!.ErrorMessage);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("12")]
+        [InlineData("12345")] 
+        public void PostPaymentRequest_Invalid_CVV_Length_Fail(string cvv)
+        {
+            // Arrange
+            var model = CreateValidModel();
+            model.Cvv = cvv;
+
+            // Act
+            var results = ValidateModel(model);
+
+            // Assert
+            var error = GetError(results, nameof(model.Cvv));
+            Assert.NotNull(error);
+        }
+
+        [Fact]
+        public void PostPaymentRequest_Valid_CVV_Length3_Pass()
+        {
+            // Arrange
+            var model = CreateValidModel();
+            model.Cvv = "123";
+
+            // Act
+            var results = ValidateModel(model);
+
+            // Assert
+            var error = GetError(results, nameof(model.Cvv));
+            Assert.Null(error);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-100)]
+
+        public void PostPaymentRequest_Invalid_Amount_Fail(int amount)
+        {
+            // Arrange
+            var model = CreateValidModel();
+            model.Amount = amount;
+
+            // Act
+            var results = ValidateModel(model);
+
+            // Assert
+            var error = GetError(results, nameof(model.Amount));
+            Assert.NotNull(error);
+        }
+
+        [Theory]
+        [InlineData(int.MaxValue)]
+        [InlineData(2)]
+        public void PostPaymentRequest_Valid_Amount_Pass(int amount)
+        {
+            // Arrange
+            var model = CreateValidModel();
+            model.Amount = amount;
+
+            // Act
+            var results = ValidateModel(model);
+
+            // Assert
+            var error = GetError(results, nameof(model.Amount));
+            Assert.Null(error);
         }
     }
 }

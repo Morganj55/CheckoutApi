@@ -1,4 +1,5 @@
-﻿using PaymentGateway.Api.Models.Requests;
+﻿using PaymentGateway.Api.Domain;
+using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Models.Responses;
 
 namespace PaymentGateway.Api.Services
@@ -22,6 +23,6 @@ namespace PaymentGateway.Api.Services
         /// <returns>A task that represents the asynchronous operation. The task result contains a <see
         /// cref="PostPaymentResponse"/> object with the outcome of the payment processing, including any relevant
         /// status or confirmation details.</returns>
-        Task<PostPaymentResponse> ProcessPaymentAsync(PostPaymentRequest request);
+        Task<PaymentRequestResponse> ProcessPaymentAsync(PaymentRequestCommand request);
     }
 }

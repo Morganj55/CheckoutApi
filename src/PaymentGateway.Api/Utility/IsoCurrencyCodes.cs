@@ -13,7 +13,7 @@
         /// </summary>
         /// <remarks>The collection includes commonly used currency codes such as "USD", "EUR", and "GBP".
         /// This set is read-only and can be used to validate or reference supported currencies.</remarks>
-        public static readonly HashSet<string> Codes = new()
+        public static readonly HashSet<string> Codes = new(StringComparer.OrdinalIgnoreCase)
         {
             "USD", "EUR", "GBP", 
         };

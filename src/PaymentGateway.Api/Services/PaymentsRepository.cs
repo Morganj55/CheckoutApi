@@ -1,4 +1,5 @@
-﻿using PaymentGateway.Api.Models.Requests;
+﻿using PaymentGateway.Api.Domain;
+using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Models.Responses;
 
 namespace PaymentGateway.Api.Services;
@@ -25,9 +26,14 @@ public class PaymentsRepository : IPaymentRepository
     #region Properties
 
     /// <summary>
+    /// Gets the total number of payments in the collection.
+    /// </summary>
+    public int TotalPaymentCount => Payments.Count;
+
+    /// <summary>
     /// Gets the collection of payment responses.
     /// </summary>
-    public List<PostPaymentResponse> Payments = new();
+    private List<PaymentRequestResponse> Payments = new();
 
     #endregion
 
@@ -37,7 +43,7 @@ public class PaymentsRepository : IPaymentRepository
     /// Adds a new payment response object to the collection of payments.
     /// </summary>
     /// <param name="payment">The <see cref="PostPaymentResponse"/> object to be added.</param>
-    public void Add(PostPaymentResponse payment)
+    public void Add(PaymentRequestResponse payment)
     {
         Payments.Add(payment);
     }
@@ -49,7 +55,7 @@ public class PaymentsRepository : IPaymentRepository
     /// <returns>
     /// The matching <see cref="PostPaymentResponse"/> object if found; otherwise, returns <see langword="null"/>.
     /// </returns>
-    public PostPaymentResponse Get(Guid id)
+    public PaymentRequestResponse Get(Guid id)
     {
         return Payments.FirstOrDefault(p => p.Id == id);
     }

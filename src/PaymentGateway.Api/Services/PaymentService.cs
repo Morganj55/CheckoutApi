@@ -1,5 +1,9 @@
-﻿using PaymentGateway.Api.Models.Requests;
+﻿using PaymentGateway.Api.Clients;
+using PaymentGateway.Api.Domain;
+using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Models.Responses;
+using PaymentGateway.Api.Utility;
+using PaymentGateway.Api.Validation;
 
 namespace PaymentGateway.Api.Services
 {
@@ -18,6 +22,7 @@ namespace PaymentGateway.Api.Services
         /// The repository used for accessing and persisting payment data.
         /// </summary>
         private readonly IPaymentRepository _paymentRepository;
+        private readonly IAquiringBankClient _bankClient;
 
         #endregion
 
@@ -27,9 +32,10 @@ namespace PaymentGateway.Api.Services
         /// Initializes a new instance of the <see cref="PaymentService"/> class.
         /// </summary>
         /// <param name="paymentRepository">The payment repository instance used for data access, injected via dependency injection.</param>
-        public PaymentService(IPaymentRepository paymentRepository)
+        public PaymentService(IPaymentRepository paymentRepository, IAquiringBankClient bankClient)
         {
             _paymentRepository = paymentRepository;
+            _bankClient = bankClient;
         }
 
         #endregion
@@ -44,25 +50,27 @@ namespace PaymentGateway.Api.Services
         /// A <see cref="Task{TResult}"/> representing the asynchronous operation, which upon completion
         /// returns the generated <see cref="PostPaymentResponse"/> object.
         /// </returns>
-        public async Task<PostPaymentResponse> ProcessPaymentAsync(PostPaymentRequest request)
+        public async Task<PaymentRequestResponse> ProcessPaymentAsync(PaymentRequestCommand request)
         {
-            // NOTE: In a real-world application, this is where you would call an external payment gateway client.
-
-            var res = new PostPaymentResponse
+            var res = await _bankClient.ProcessPaymentAsync(request);
+            var paymentResponse = new PaymentRequestResponse
             {
+                Id = Guid.NewGuid(),
                 Amount = request.Amount,
-                // Extract the last four digits of the card number for persistence/display
-                CardNumberLastFour = request.CardNumber.Substring(request.CardNumber.Length - 4, 4),
                 Currency = request.Currency,
+                CardNumberLastFour = request.CardNumber.Substring(request.CardNumber.Length - 4, 4),
                 ExpiryMonth = request.ExpiryMonth,
                 ExpiryYear = request.ExpiryYear,
-                Id = Guid.NewGuid(),
+                Status = res.Authorized ? Models.PaymentStatus.Authorized : Models.PaymentStatus.Declined,
             };
 
-            // Persist the payment record locally
-            _paymentRepository.Add(res);
+            if (res.Authorized)
+            {
+                // Persist the payment record locally
+                _paymentRepository.Add(paymentResponse);
+            }
 
-            return res;
+            return paymentResponse;
         }
 
         #endregion

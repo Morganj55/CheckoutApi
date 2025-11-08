@@ -10,26 +10,22 @@ namespace PaymentGateway.Api.Models.Requests;
 /// <remarks>This class is used to encapsulate the necessary information for processing a payment transaction. It
 /// includes validation attributes to ensure that the provided data adheres to the expected format and constraints. The
 /// card expiry date is validated to ensure it is in the future.</remarks>
-public class PostPaymentRequest : IValidatableObject
+public class PostPaymentRequest
 {
     #region Properties
 
     [Required(ErrorMessage = "Card number is required.")]
-    [MinLength(14, ErrorMessage = "Card number must be at least 14 digits.")]
-    [MaxLength(19, ErrorMessage = "Card number must be at most 19 digits.")]
-    [RegularExpression(@"^\d+$", ErrorMessage = "Card number must contain digits only.")]
     public string CardNumber { get; set; }
 
     [Required(ErrorMessage = "Expiry month is required.")]
-    [Range(1,12, ErrorMessage = "Expiry month must be between 1 and 12.")]
+    [Range(1, 12, ErrorMessage = "Expiry month must be between 1 and 12.")]
     public int ExpiryMonth { get; set; }
 
     [Required(ErrorMessage = "Expiry year is required.")]
     public int ExpiryYear { get; set; }
 
     [Required(ErrorMessage = "Currency code is required.")]
-    [StringLength(3, ErrorMessage = "Currency code must be 3 characters long.")]
-    [ValidCurrency(ErrorMessage = "Invalid currency code.")]
+    [StringLength(3, MinimumLength = 3, ErrorMessage = "Currency code must be 3 characters long.")]
     public string Currency { get; set; }
 
     [Required(ErrorMessage = "Payment amount is required.")]
@@ -37,8 +33,7 @@ public class PostPaymentRequest : IValidatableObject
     public int Amount { get; set; }
 
     [Required(ErrorMessage = "Cvv is required.")]
-    [StringLength(4, MinimumLength = 3, ErrorMessage = "CVV must be 3 or 4 digits.")]
-    [RegularExpression(@"^\d{3,4}$", ErrorMessage = "CVV must only contain numeric characters.")]
+    [StringLength(4, MinimumLength = 3, ErrorMessage = "CVV must be 3 or 4 characters.")]
     public string Cvv { get; set; }
 
     #endregion
