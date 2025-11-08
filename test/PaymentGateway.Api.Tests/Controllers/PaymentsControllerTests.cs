@@ -9,7 +9,7 @@ using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Routes;
 using PaymentGateway.Api.Services;
 
-namespace PaymentGateway.Api.Tests;
+namespace PaymentGateway.Api.Tests.Controllers;
 
 public class PaymentsControllerTests
 {
@@ -92,7 +92,7 @@ public class PaymentsControllerTests
         {
             CardNumber = "4111111111111111",
             ExpiryMonth = _random.Next(1, 12),
-            ExpiryYear = (int)DateTime.Now.Year + 1,
+            ExpiryYear = DateTime.Now.Year + 1,
             Cvv = "12345555555",
             Amount = _random.Next(1, 10000),
             Currency = "GBP"

@@ -50,9 +50,14 @@ namespace PaymentGateway.Api.Services
         /// A <see cref="Task{TResult}"/> representing the asynchronous operation, which upon completion
         /// returns the generated <see cref="PostPaymentResponse"/> object.
         /// </returns>
-        public async Task<PaymentRequestResponse> ProcessPaymentAsync(PaymentRequestCommand request)
+        public async Task<OperationResult<PaymentRequestResponse>> ProcessPaymentAsync(PaymentRequestCommand request)
         {
             var res = await _bankClient.ProcessPaymentAsync(request);
+            if (res.IsFailure)
+            {
+                return OperationResult<PaymentRequestResponse>.Failure(res.Error.Kind, res.Error.Message, res.Error.Code);
+            }
+
             var paymentResponse = new PaymentRequestResponse
             {
                 Id = Guid.NewGuid(),
@@ -61,16 +66,16 @@ namespace PaymentGateway.Api.Services
                 CardNumberLastFour = request.CardNumber.Substring(request.CardNumber.Length - 4, 4),
                 ExpiryMonth = request.ExpiryMonth,
                 ExpiryYear = request.ExpiryYear,
-                Status = res.Authorized ? Models.PaymentStatus.Authorized : Models.PaymentStatus.Declined,
+                Status = res.Data!.Authorized ? Models.PaymentStatus.Authorized : Models.PaymentStatus.Declined,
             };
 
-            if (res.Authorized)
+            if (res.Data!.Authorized)
             {
                 // Persist the payment record locally
                 _paymentRepository.Add(paymentResponse);
             }
 
-            return paymentResponse;
+            return OperationResult<PaymentRequestResponse>.Success(paymentResponse);
         }
 
         #endregion

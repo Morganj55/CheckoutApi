@@ -1,5 +1,6 @@
 ﻿using PaymentGateway.Api.Domain;
 using PaymentGateway.Api.Models.Requests;
+using PaymentGateway.Api.Utility;
 
 namespace PaymentGateway.Api.Clients
 {
@@ -11,6 +12,6 @@ namespace PaymentGateway.Api.Clients
         /// <param name="request">The payment request containing the details required to process the payment.</param>
         /// <returns>A task that represents the asynchronous operation. The task result contains the response from the payment
         /// gateway, including the status and any additional information about the processed payment.</returns>
-        Task<PostBankResponse> ProcessPaymentAsync(PaymentRequestCommand request);
+        Task<OperationResult<PostBankResponse>> ProcessPaymentAsync(PaymentRequestCommand request);
     }
 }

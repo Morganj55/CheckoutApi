@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 using PaymentGateway.Api.Validation;
@@ -134,6 +135,38 @@ namespace PaymentGateway.Api.Domain
         public static string FormatExpiryDate(int month, int year)
         {
             return $"{month:D2}/{year:D4}";
+        }
+
+        private static readonly JsonSerializerOptions DefaultJsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// Serializes this command to JSON with snake_case keys expected by the bank.
+        /// </summary>
+        /// <param name="options">
+        /// Optional <see cref="JsonSerializerOptions"/>. When <c>null</c>, sensible defaults are used
+        /// (ignore nulls, case-insensitive read, no naming policy since keys are explicit).
+        /// </param>
+        /// <returns>A JSON string representing this command.</returns>
+        public string ToJson(JsonSerializerOptions? options = null)
+        {
+            var payload = new
+            {
+                card_number = CardNumber,
+                expiry_date = ExpiryDate,   // "MM/YYYY"
+                currency = Currency,     // e.g., "USD"
+                amount = Amount,       // minor units
+                cvv = Cvv
+            };
+
+            return JsonSerializer.Serialize(payload, options ?? DefaultJsonOptions);
         }
 
         #endregion

@@ -21,7 +21,7 @@ public class PaymentsController : Controller
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<PostPaymentResponse?>> GetPaymentAsync(Guid id)
+    public async Task<ActionResult<PostPaymentResponse>> GetPaymentAsync(Guid id)
     {
         var payment = _paymentsRepository.Get(id);
         return new OkObjectResult(payment);
@@ -42,8 +42,13 @@ public class PaymentsController : Controller
             return BadRequest(errors);
         }
 
-        var res = await _payService.ProcessPaymentAsync(payRequest);
+        var processPayResult = await _payService.ProcessPaymentAsync(payRequest);
+        if (processPayResult.IsFailure)
+        {
+            return StatusCode((int)processPayResult.Error.Code, processPayResult.Error.Message);
+        }
 
+        var res = processPayResult.Data;
         return new OkObjectResult(new PostPaymentResponse
         {
             Id = res.Id,

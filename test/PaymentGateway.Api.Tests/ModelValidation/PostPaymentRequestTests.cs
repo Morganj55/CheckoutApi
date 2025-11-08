@@ -105,7 +105,6 @@ namespace PaymentGateway.Api.Tests.ModelValidation
             Assert.NotNull(error);
         }
 
-
         [Fact]
         public void PostPaymentRequest_Valid_ExpiryDate_PassesForNextMonth()
         {
