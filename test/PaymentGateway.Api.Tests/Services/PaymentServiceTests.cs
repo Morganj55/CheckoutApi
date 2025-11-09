@@ -85,7 +85,7 @@ namespace PaymentGateway.Api.Tests.Services
             Assert.Equal(validRequest.ExpiryYear, res.Data.ExpiryYear);
             Assert.Equal(validRequest.CardNumber[^4..], res.Data.CardNumberLastFour);
             Assert.NotEqual(Guid.Empty, res.Data.Id);
-            Assert.Equal(0, paymentRepository.TotalPaymentCount);
+            Assert.Equal(1, paymentRepository.TotalPaymentCount);
         }
 
         [Fact]
@@ -103,7 +103,7 @@ namespace PaymentGateway.Api.Tests.Services
 
             // Assert
             Assert.True(res.IsFailure);
-            Assert.Equal(ErrorKind.Unexpected, res.Error.Kind);
+            Assert.Equal(ErrorKind.Unexpected, res.Error!.Kind);
             Assert.Equal("Unknown error", res.Error.Message);
             Assert.Equal(System.Net.HttpStatusCode.InternalServerError, res.Error.Code);
         }

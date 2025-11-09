@@ -1,129 +1,183 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
 
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 
 using PaymentGateway.Api.Controllers;
+using PaymentGateway.Api.Domain;
+using PaymentGateway.Api.Models;
+using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Routes;
 using PaymentGateway.Api.Services;
+using PaymentGateway.Api.Tests.Stubs;
+using PaymentGateway.Api.Utility;
 
 namespace PaymentGateway.Api.Tests.Controllers;
 
 public class PaymentsControllerTests
 {
-    private readonly Random _random = new();
+    private static PaymentsController CreateController(StubPaymentService stub)
+       => new PaymentsController(stub);
 
-    //[Fact]
-    //public async Task PostPaymentAsync_ValidRequest_ReturnsOKAndAddsPayment()
-    //{
-    //    // Arrange
-    //    var postPaymentRequest = new
-    //    {
-    //        CardNumber = "4111111111111111",
-    //        ExpiryMonth = _random.Next(1, 12),
-    //        ExpiryYear = _random.Next(2023, 2030),
-    //        Cvv = "123",
-    //        Amount = _random.Next(1, 10000),
-    //        Currency = "GBP"
-    //    };
+    private static PaymentRequestResponse MakePaymentRequestResponse(Guid id) => new PaymentRequestResponse
+    {
+        Id = id,
+        Amount = 11111,
+        Currency = "GBP",
+        CardNumberLastFour = "4242",
+        ExpiryMonth = 12,
+        ExpiryYear = 2099,
+        Status = PaymentStatus.Authorized
+    };
 
-    //    var paymentsRepository = new PaymentsRepository();
-    //    var webApplicationFactory = new WebApplicationFactory<PaymentsController>();
-    //    var client = webApplicationFactory.WithWebHostBuilder(builder =>
-    //        builder.ConfigureServices(services => ((ServiceCollection)services)
-    //            .AddSingleton(paymentsRepository)))
-    //        .CreateClient();
-
-    //    // Act
-    //    var response = await client.PostAsJsonAsync(RouteContants.PaymentsBase, postPaymentRequest);
-    //    var paymentResponse = await response.Content.ReadFromJsonAsync<PostPaymentResponse>();
-
-    //    // Assert
-    //    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-    //    Assert.NotNull(paymentResponse);
-    //    Assert.Equal(postPaymentRequest.ExpiryMonth, paymentResponse!.ExpiryMonth);
-    //    Assert.Equal(postPaymentRequest.ExpiryYear, paymentResponse.ExpiryYear);
-    //    Assert.Equal(postPaymentRequest.Amount, paymentResponse.Amount);
-    //    Assert.Equal(postPaymentRequest.Currency, paymentResponse.Currency);
-    //    Assert.Equal(postPaymentRequest.Amount, paymentResponse.Amount);
-    //    Assert.Single(paymentsRepository.Payments);
-    //}
-
-    //[Fact]
-    //public async Task RetrievesAPaymentSuccessfully()
-    //{
-    //    // Arrange
-    //    var payment = new PostPaymentResponse
-    //    {
-    //        Id = Guid.NewGuid(),
-    //        ExpiryYear = _random.Next(2023, 2030),
-    //        ExpiryMonth = _random.Next(1, 12),
-    //        Amount = _random.Next(1, 10000),
-    //        CardNumberLastFour = _random.Next(1111, 9999).ToString(),
-    //        Currency = "GBP"
-    //    };
-
-    //    var paymentsRepository = new PaymentsRepository();
-    //    paymentsRepository.Add(payment);
-
-    //    var webApplicationFactory = new WebApplicationFactory<PaymentsController>();
-    //    var client = webApplicationFactory.WithWebHostBuilder(builder =>
-    //        builder.ConfigureServices(services => ((ServiceCollection)services)
-    //            .AddSingleton(paymentsRepository)))
-    //        .CreateClient();
-
-    //    // Act
-    //    var response = await client.GetAsync($"/api/Payments/{payment.Id}");
-    //    var paymentResponse = await response.Content.ReadFromJsonAsync<PostPaymentResponse>();
-
-    //    // Assert
-    //    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-    //    Assert.NotNull(paymentResponse);
-    //}
+    // -------- GET --------
 
     [Fact]
-    public async Task PostPaymentAsync_InvalidRequest_Returns400BadRequest()
+    public async Task GetPaymentAsync_EmptyId_ReturnsBadRequest()
     {
-        // Arrange
-        // Invalid CVV length
-        var postPaymentRequest = new
-        {
-            CardNumber = "4111111111111111",
-            ExpiryMonth = _random.Next(1, 12),
-            ExpiryYear = DateTime.Now.Year + 1,
-            Cvv = "12345555555",
-            Amount = _random.Next(1, 10000),
-            Currency = "GBP"
-        };
+        var stub = new StubPaymentService();
+        var controller = CreateController(stub);
 
-        var paymentsRepository = new PaymentsRepository();
-        var webApplicationFactory = new WebApplicationFactory<PaymentsController>();
-        var client = webApplicationFactory.WithWebHostBuilder(builder =>
-            builder.ConfigureServices(services => ((ServiceCollection)services)
-                .AddSingleton(paymentsRepository)))
-            .CreateClient();
+        var result = await controller.GetPaymentAsync(Guid.Empty);
 
-        // Act
-        var response = await client.PostAsJsonAsync(RouteContants.PaymentsBase, postPaymentRequest);
-        var paymentResponse = await response.Content.ReadFromJsonAsync<PostPaymentResponse>();
-
-        // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var bad = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Equal(400, bad.StatusCode);
+        Assert.Equal("Invalid payment ID.", bad.Value);
+        Assert.Null(stub.LastGetId); // should short-circuit before service call
     }
 
     [Fact]
-    public async Task Returns404IfPaymentNotFound()
+    public async Task GetPaymentAsync_Found_ReturnsOkWithBody()
     {
-        // Arrange
-        var webApplicationFactory = new WebApplicationFactory<PaymentsController>();
-        var client = webApplicationFactory.CreateClient();
-        
-        // Act
-        var response = await client.GetAsync($"/api/Payments/{Guid.NewGuid()}");
-        
-        // Assert
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        var id = Guid.NewGuid();
+        var stub = new StubPaymentService
+        {
+            GetHandler = (gid, _) =>
+            {
+                var body = MakePaymentRequestResponse(gid);
+                return Task.FromResult(OperationResult<PaymentRequestResponse>.Success(body));
+            }
+        };
+        var controller = CreateController(stub);
+
+        var result = await controller.GetPaymentAsync(id);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var body = Assert.IsType<PaymentRequestResponse>(ok.Value);
+        Assert.Equal(id, body.Id);
+        Assert.Equal(PaymentStatus.Authorized, body.Status);
+        Assert.Equal(id, stub.LastGetId);
+    }
+
+    [Fact]
+    public async Task GetPaymentAsync_NotFound_Returns404()
+    {
+        var id = Guid.NewGuid();
+        var stub = new StubPaymentService
+        {
+            GetHandler = (gid, _) =>
+                Task.FromResult(OperationResult<PaymentRequestResponse>.Failure(
+                    ErrorKind.NotFound, "nope", HttpStatusCode.NotFound))
+        };
+        var controller = CreateController(stub);
+
+        var result = await controller.GetPaymentAsync(id);
+
+        Assert.IsType<NotFoundResult>(result.Result);
+        Assert.Equal(id, stub.LastGetId);
+    }
+
+    // -------- POST --------
+
+    [Fact]
+    public async Task PostPaymentAsync_InvalidBody_ReturnsBadRequest()
+    {
+        var req = new PostPaymentRequest
+        {
+            CardNumber = "",      // invalid so TryCreate fails
+            ExpiryMonth = 0,
+            ExpiryYear = 2000,
+            Currency = "",
+            Amount = -100000,
+            Cvv = ""
+        };
+
+        var stub = new StubPaymentService();
+        var controller = CreateController(stub);
+
+        var result = await controller.PostPaymentAsync(req);
+
+        var bad = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Equal(400, bad.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostPaymentAsync_ServiceFailure_MapsStatusCodeAndMessage()
+    {
+        var req = new PostPaymentRequest
+        {
+            CardNumber = "4242424242424242",
+            ExpiryMonth = 12,
+            ExpiryYear = 2099,
+            Currency = "GBP",
+            Amount = 1111,
+            Cvv = "123"
+        };
+
+        var stub = new StubPaymentService
+        {
+            ProcessHandler = (_, __) =>
+                Task.FromResult(OperationResult<PaymentRequestResponse>.Failure(
+                    ErrorKind.Transient, "Bank down", HttpStatusCode.ServiceUnavailable))
+        };
+
+        var controller = CreateController(stub);
+
+        var result = await controller.PostPaymentAsync(req);
+
+        var obj = Assert.IsType<ObjectResult>(result.Result);
+        Assert.Equal((int)HttpStatusCode.ServiceUnavailable, obj.StatusCode);
+        Assert.Equal("Bank down", obj.Value);
+    }
+
+    [Fact]
+    public async Task PostPaymentAsync_ServiceSuccess_ReturnsOkWithProjectedBody()
+    {
+        var req = new PostPaymentRequest
+        {
+            CardNumber = "4242424242424242",
+            ExpiryMonth = 12,
+            ExpiryYear = 2099,
+            Currency = "GBP",
+            Amount = 11111,
+            Cvv = "123"
+        };
+
+        var id = Guid.NewGuid();
+        var repoModel = MakePaymentRequestResponse(id);
+
+        var stub = new StubPaymentService
+        {
+            ProcessHandler = (_, __) =>
+                Task.FromResult(OperationResult<PaymentRequestResponse>.Success(repoModel))
+        };
+
+        var controller = CreateController(stub);
+
+        var result = await controller.PostPaymentAsync(req);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var body = Assert.IsType<PostPaymentResponse>(ok.Value);
+
+        Assert.Equal(id, body.Id);
+        Assert.Equal(repoModel.Amount, body.Amount);
+        Assert.Equal(repoModel.Currency, body.Currency);
+        Assert.Equal(repoModel.CardNumberLastFour, body.CardNumberLastFour);
+        Assert.Equal(repoModel.ExpiryMonth, body.ExpiryMonth);
+        Assert.Equal(repoModel.ExpiryYear, body.ExpiryYear);
+        Assert.Equal(repoModel.Status, body.Status);
     }
 }

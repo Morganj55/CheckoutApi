@@ -74,5 +74,22 @@ public class PaymentsRepository : IPaymentRepository
         return OperationResult<PaymentRequestResponse>.Failure(ErrorKind.NotFound, "Payment not found.", System.Net.HttpStatusCode.NotFound);
     }
 
+    /// <summary>
+    /// Updates an existing payment response in the collection.
+    /// </summary>
+    /// <param name="id">The id of the payment</param>
+    /// <param name="status">The updated status</param>
+    /// <returns>The updated payment request</returns>
+    public OperationResult<PaymentRequestResponse> UpdatePaymentStatus(Guid id, Models.PaymentStatus status)
+    {
+        if (Payments.TryGetValue(id, out PaymentRequestResponse value))
+        {
+            value.Status = status;
+            return OperationResult<PaymentRequestResponse>.Success(value);
+        }
+
+        return OperationResult<PaymentRequestResponse>.Failure(ErrorKind.NotFound, "Payment not found.", System.Net.HttpStatusCode.NotFound);
+    }
+
     #endregion
 }

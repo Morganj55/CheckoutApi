@@ -3,8 +3,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 using PaymentGateway.Api.Domain;
-using PaymentGateway.Api.Models.Requests;
-using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Utility;
 
 namespace PaymentGateway.Api.Clients
@@ -24,51 +22,39 @@ namespace PaymentGateway.Api.Clients
             _httpClient = httpClient;
         }
 
-        public async Task<OperationResult<PostBankResponse>> ProcessPaymentAsync(PaymentRequestCommand request)
+        public async Task<OperationResult<PostBankResponse>> ProcessPaymentAsync(PaymentRequestCommand request, CancellationToken ct = default)
         {
-            try
+            // Setup the http request
+            using var httpReq = new HttpRequestMessage(HttpMethod.Post, BankOptions.PaymentRoute)
             {
-                var jsonReq = request.ToJson();
+                Content = new StringContent(request.ToJson(), System.Text.Encoding.UTF8, "application/json")
+            };
 
-                using var httpReq = new HttpRequestMessage(HttpMethod.Post, BankOptions.PaymentRoute)
-                {
-                    Content = new StringContent(jsonReq, System.Text.Encoding.UTF8, "application/json")
-                };
+            // Send the request
+            using var resp = await _httpClient.SendAsync(httpReq, HttpCompletionOption.ResponseHeadersRead, ct);
 
-                var ct = new CancellationToken();
-                using var resp = await _httpClient.SendAsync(httpReq, HttpCompletionOption.ResponseHeadersRead, ct);
-
-                if (resp.StatusCode == HttpStatusCode.BadRequest)
-                {
-                    var msg = await resp.Content.ReadAsStringAsync(ct);
-                    return OperationResult<PostBankResponse>.Failure(ErrorKind.Unexpected, msg, resp.StatusCode);
-                }
-
-                if (resp.StatusCode == HttpStatusCode.ServiceUnavailable)
-                {
-                    var msg = await resp.Content.ReadAsStringAsync(ct);
-                    return OperationResult<PostBankResponse>.Failure(ErrorKind.Transient, msg, resp.StatusCode);
-                }
-
-                resp.EnsureSuccessStatusCode();
-
-                var json = await resp.Content.ReadAsStringAsync(ct);
-                var data = JsonSerializer.Deserialize<ExampleBankDto>(json, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                }) ?? throw new InvalidOperationException("Empty/invalid JSON from bank.");
-
-                return OperationResult<PostBankResponse>.Success(new PostBankResponse
-                {
-                    Authorized = data.Authorized,
-                    AuthorizationCode = data.AuthorizationCode
-                });
-
-            }
-            catch (Exception ex)
+            if (resp.StatusCode == HttpStatusCode.BadRequest)
             {
-                throw;
+                var msg = await resp.Content.ReadAsStringAsync(ct);
+                return OperationResult<PostBankResponse>.Failure(ErrorKind.Unexpected, msg, resp.StatusCode);
             }
+
+            if (resp.StatusCode == HttpStatusCode.ServiceUnavailable)
+            {
+                var msg = await resp.Content.ReadAsStringAsync(ct);
+                return OperationResult<PostBankResponse>.Failure(ErrorKind.Transient, msg, resp.StatusCode);
+            }
+
+            // This throws an exception which will be caught by the global exception handler middleware
+            resp.EnsureSuccessStatusCode();
+
+            var json = await resp.Content.ReadAsStringAsync(ct);
+            var data = JsonSerializer.Deserialize<ExampleBankDto>(json);
+            return OperationResult<PostBankResponse>.Success(new PostBankResponse
+            {
+                Authorized = data.Authorized,
+                AuthorizationCode = data.AuthorizationCode
+            });
         }
 
         private class ExampleBankDto
@@ -79,6 +65,5 @@ namespace PaymentGateway.Api.Clients
             [JsonPropertyName("authorization_code")]
             public string AuthorizationCode { get; set; }
         }
-
     }
 }

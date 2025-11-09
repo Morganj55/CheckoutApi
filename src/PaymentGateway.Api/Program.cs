@@ -1,4 +1,8 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 using PaymentGateway.Api.Clients;
+using PaymentGateway.Api.Middleware;
 using PaymentGateway.Api.Services;
 using PaymentGateway.Api.Utility;
 
@@ -28,6 +32,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseGlobalExceptionHandling();
 
 app.UseHttpsRedirection();
 

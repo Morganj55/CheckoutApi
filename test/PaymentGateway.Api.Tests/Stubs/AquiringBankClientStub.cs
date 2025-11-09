@@ -24,7 +24,7 @@ namespace PaymentGateway.Api.Tests.Stubs
             _error = error;
         }
 
-        public async Task<OperationResult<PostBankResponse>> ProcessPaymentAsync(PaymentRequestCommand request)
+        public async Task<OperationResult<PostBankResponse>> ProcessPaymentAsync(PaymentRequestCommand request, CancellationToken ct = default)
         {
             if (_success)
             {
@@ -32,7 +32,6 @@ namespace PaymentGateway.Api.Tests.Stubs
             }
             
             return await Task.FromResult(OperationResult<PostBankResponse>.Failure(_error));
-
         }
     }
 }

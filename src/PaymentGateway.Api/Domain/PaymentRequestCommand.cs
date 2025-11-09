@@ -137,12 +137,6 @@ namespace PaymentGateway.Api.Domain
             return $"{month:D2}/{year:D4}";
         }
 
-        private static readonly JsonSerializerOptions DefaultJsonOptions = new()
-        {
-            PropertyNameCaseInsensitive = true,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-        };
-
         #endregion
 
         #region Public Methods
@@ -151,11 +145,9 @@ namespace PaymentGateway.Api.Domain
         /// Serializes this command to JSON with snake_case keys expected by the bank.
         /// </summary>
         /// <param name="options">
-        /// Optional <see cref="JsonSerializerOptions"/>. When <c>null</c>, sensible defaults are used
-        /// (ignore nulls, case-insensitive read, no naming policy since keys are explicit).
-        /// </param>
+   
         /// <returns>A JSON string representing this command.</returns>
-        public string ToJson(JsonSerializerOptions? options = null)
+        public string ToJson()
         {
             var payload = new
             {
@@ -166,7 +158,7 @@ namespace PaymentGateway.Api.Domain
                 cvv = Cvv
             };
 
-            return JsonSerializer.Serialize(payload, options ?? DefaultJsonOptions);
+            return JsonSerializer.Serialize(payload);
         }
 
         #endregion

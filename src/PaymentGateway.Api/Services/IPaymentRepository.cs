@@ -1,4 +1,5 @@
 ﻿using PaymentGateway.Api.Domain;
+using PaymentGateway.Api.Models;
 using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Utility;
 
@@ -25,6 +26,13 @@ namespace PaymentGateway.Api.Services
         /// <returns>A <see cref="PaymentRequestResponse"/> object containing the details of the payment. Returns <see
         /// langword="null"/> if no payment is found with the specified identifier.</returns>
         Task<OperationResult<PaymentRequestResponse>> GetAsync(Guid id);
+
+        /// <summary>
+        /// Updates an existing payment response in the collection.
+        /// </summary>
+        /// <param name="updatedResponse">The updated response</param>
+        /// <returns>The response if success</returns>
+        OperationResult<PaymentRequestResponse> UpdatePaymentStatus(Guid id, PaymentStatus status);
 
         /// <summary>
         /// Gets the total number of payments processed.

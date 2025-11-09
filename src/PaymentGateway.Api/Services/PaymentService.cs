@@ -1,4 +1,6 @@
-﻿using PaymentGateway.Api.Clients;
+﻿using System.Net;
+
+using PaymentGateway.Api.Clients;
 using PaymentGateway.Api.Domain;
 using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Models.Responses;
@@ -56,13 +58,7 @@ namespace PaymentGateway.Api.Services
         /// </returns>
         public async Task<OperationResult<PaymentRequestResponse>> ProcessPaymentAsync(PaymentRequestCommand request)
         {
-            var res = await _bankClient.ProcessPaymentAsync(request);
-            if (res.IsFailure)
-            {
-                return OperationResult<PaymentRequestResponse>.Failure(res.Error.Kind, res.Error.Message, res.Error.Code);
-            }
-
-            var paymentResponse = new PaymentRequestResponse
+            var paymentRecord = new PaymentRequestResponse
             {
                 Id = Guid.NewGuid(),
                 Amount = request.Amount,
@@ -70,16 +66,32 @@ namespace PaymentGateway.Api.Services
                 CardNumberLastFour = request.CardNumber.Substring(request.CardNumber.Length - 4, 4),
                 ExpiryMonth = request.ExpiryMonth,
                 ExpiryYear = request.ExpiryYear,
-                Status = res.Data!.Authorized ? Models.PaymentStatus.Authorized : Models.PaymentStatus.Declined,
+                Status = Models.PaymentStatus.Pending,
             };
 
-            if (res.Data!.Authorized)
+            // Persist the payment record before processing
+            if (_paymentRepository.Add(paymentRecord).IsFailure)
             {
-                // Persist the payment record locally
-                _paymentRepository.Add(paymentResponse);
+                return OperationResult<PaymentRequestResponse>.Failure(ErrorKind.Unexpected, "Could not add payment", null);
             }
 
-            return OperationResult<PaymentRequestResponse>.Success(paymentResponse);
+            // Process the payment with the acquiring bank
+            var bankResult = await _bankClient.ProcessPaymentAsync(request);
+            if (bankResult.IsFailure)
+            {
+                return OperationResult<PaymentRequestResponse>.Failure(bankResult.Error!);
+            }
+
+            // Update the payment record status based on the bank's response
+            var newPaymentStatus =  bankResult.Data!.Authorized ? Models.PaymentStatus.Authorized : Models.PaymentStatus.Declined;
+            var updatePaymentResult = _paymentRepository.UpdatePaymentStatus(paymentRecord.Id, newPaymentStatus);
+            if (updatePaymentResult.IsFailure)
+            {
+                // Need a way to reconcile later, could do through logging of payment ID as it should exist within storage already?
+                return OperationResult<PaymentRequestResponse>.Failure(ErrorKind.Transient, "Payment authorized but recording failed. We will reconcile.", HttpStatusCode.Accepted);
+            }
+
+            return OperationResult<PaymentRequestResponse>.Success(updatePaymentResult.Data!);
         }
 
         /// <summary>
@@ -91,9 +103,9 @@ namespace PaymentGateway.Api.Services
         /// <returns>A task that represents the asynchronous operation. The task result contains an <see
         /// cref="OperationResult{T}"/> object that includes the payment details if the operation is successful, or an
         /// error message if it fails.</returns>
-        public Task<OperationResult<PaymentRequestResponse>> GetPaymentAsync(Guid id)
+        public async Task<OperationResult<PaymentRequestResponse>> GetPaymentAsync(Guid id)
         {
-            return _paymentRepository.GetAsync(id);
+            return await _paymentRepository.GetAsync(id);
         }
 
         #endregion
