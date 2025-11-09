@@ -12,65 +12,38 @@ using PaymentGateway.Api.Services;
 using PaymentGateway.Api.Tests.ModelValidation;
 using PaymentGateway.Api.Tests.Stubs;
 using PaymentGateway.Api.Utility;
+using PaymentGateway.Api.Tests.TestDataBuilders;
 
 namespace PaymentGateway.Api.Tests.Services
 {
     public class PaymentRepositoryTests
     {
-        private PaymentRequestResponse MakeValid()
-        {
-            return new PaymentRequestResponse
-            {
-                Id = Guid.NewGuid(),
-                CardNumberLastFour = "1234",
-                ExpiryMonth = 12,
-                ExpiryYear = 2025,
-                Amount = 1000,
-                Currency = "USD",
-                Status = PaymentStatus.Authorized
-            };
-        }
-
-        private static PaymentRequestResponse NewPayment(Guid? id = null, PaymentStatus status = PaymentStatus.Pending)
-        {
-            return new PaymentRequestResponse
-            {
-                Id = id ?? Guid.NewGuid(),
-                Amount = 1234,
-                Currency = "GBP",
-                CardNumberLastFour = "4242",
-                ExpiryMonth = 12,
-                ExpiryYear = DateTime.Now.Year + 1,
-                Status = status
-            };
-        }
-
         [Fact]
-        public void Add_NewPayment_ReturnsSuccess_AndIncrementsCount()
+        public async Task Add_NewPayment_ReturnsSuccess_AndIncrementsCount()
         {
             var repo = new PaymentsRepository();
-            var p = NewPayment();
+            var p = PaymentRequestResponseBuilder.Build(new Guid());
 
             var before = repo.TotalPaymentCount;
-            var result = repo.Add(p);
+            var result = await repo.Add(p);
 
             Assert.True(result.IsSuccess);
             Assert.Equal(before + 1, repo.TotalPaymentCount);
         }
 
         [Fact]
-        public void Add_DuplicateId_ReturnsFailure_AndDoesNotIncrementCount()
+        public async Task Add_DuplicateId_ReturnsFailure_AndDoesNotIncrementCount()
         {
             var repo = new PaymentsRepository();
             var id = Guid.NewGuid();
-            var p1 = NewPayment(id);
-            var p2 = NewPayment(id);
+            var p1 = PaymentRequestResponseBuilder.Build(id);
+            var p2 = PaymentRequestResponseBuilder.Build(id);
 
-            var first = repo.Add(p1);
+            var first = await repo.Add(p1);
             Assert.True(first.IsSuccess);
 
             var countBefore = repo.TotalPaymentCount;
-            var dup = repo.Add(p2);
+            var dup = await repo.Add(p2);
 
             Assert.True(dup.IsFailure);
             Assert.NotNull(dup.Error);
@@ -82,16 +55,16 @@ namespace PaymentGateway.Api.Tests.Services
         public async Task GetAsync_Existing_ReturnsSuccess_WithSameData()
         {
             var repo = new PaymentsRepository();
-            var p = NewPayment();
-            repo.Add(p);
+            var p = PaymentRequestResponseBuilder.Build(new Guid());
+            await repo.Add(p);
 
             var got = await repo.GetAsync(p.Id);
 
             Assert.True(got.IsSuccess);
             Assert.NotNull(got.Data);
             Assert.Equal(p.Id, got.Data!.Id);
-            Assert.Equal("4242", got.Data.CardNumberLastFour);
-            Assert.Equal(PaymentStatus.Pending, got.Data.Status);
+            Assert.Equal(p.CardNumberLastFour, got.Data.CardNumberLastFour);
+            Assert.Equal(p.Status, got.Data.Status);
         }
 
         [Fact]
@@ -108,14 +81,14 @@ namespace PaymentGateway.Api.Tests.Services
         }
 
         [Fact]
-        public void Update_Existing_ChangesStatus_AndReturnsSuccess()
+        public async Task Update_Existing_ChangesStatus_AndReturnsSuccess()
         {
             var repo = new PaymentsRepository();
-            var original = NewPayment(status: PaymentStatus.Pending);
-            var add = repo.Add(original);
+            var original = PaymentRequestResponseBuilder.Build (new Guid(), PaymentStatus.Pending);
+            var add = await repo.Add(original);
             Assert.True(add.IsSuccess);
 
-            var result = repo.UpdatePaymentStatus(original.Id, PaymentStatus.Authorized);
+            var result = await repo.UpdatePaymentStatus(original.Id, PaymentStatus.Authorized);
             Assert.True(result.IsSuccess);
 
             var fetched = repo.GetAsync(original.Id).GetAwaiter().GetResult();
@@ -124,11 +97,11 @@ namespace PaymentGateway.Api.Tests.Services
         }
 
         [Fact]
-        public void Update_Missing_ReturnsNotFound()
+        public async Task Update_Missing_ReturnsNotFound()
         {
             var repo = new PaymentsRepository();
 
-            var result = repo.UpdatePaymentStatus(Guid.NewGuid(), PaymentStatus.Authorized);
+            var result = await repo.UpdatePaymentStatus(Guid.NewGuid(), PaymentStatus.Authorized);
 
             Assert.True(result.IsFailure);
             Assert.NotNull(result.Error);
@@ -144,7 +117,7 @@ namespace PaymentGateway.Api.Tests.Services
 
             await Task.WhenAll(ids.Select(id => Task.Run(() =>
             {
-                var p = NewPayment(id);
+                var p = PaymentRequestResponseBuilder.Build(id);
                 repo.Add(p);
             })));
 

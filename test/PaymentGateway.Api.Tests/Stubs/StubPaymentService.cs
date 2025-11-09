@@ -1,12 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using PaymentGateway.Api.Domain;
+﻿using PaymentGateway.Api.Domain;
 using PaymentGateway.Api.Models;
-using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Services;
 using PaymentGateway.Api.Utility;
 

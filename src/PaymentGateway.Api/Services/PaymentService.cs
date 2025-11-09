@@ -70,7 +70,8 @@ namespace PaymentGateway.Api.Services
             };
 
             // Persist the payment record before processing
-            if (_paymentRepository.Add(paymentRecord).IsFailure)
+            var addResult = await _paymentRepository.Add(paymentRecord);
+            if (addResult.IsFailure)
             {
                 return OperationResult<PaymentRequestResponse>.Failure(ErrorKind.Unexpected, "Could not add payment", null);
             }
@@ -84,7 +85,7 @@ namespace PaymentGateway.Api.Services
 
             // Update the payment record status based on the bank's response
             var newPaymentStatus =  bankResult.Data!.Authorized ? Models.PaymentStatus.Authorized : Models.PaymentStatus.Declined;
-            var updatePaymentResult = _paymentRepository.UpdatePaymentStatus(paymentRecord.Id, newPaymentStatus);
+            var updatePaymentResult = await _paymentRepository.UpdatePaymentStatus(paymentRecord.Id, newPaymentStatus);
             if (updatePaymentResult.IsFailure)
             {
                 // Need a way to reconcile later, could do through logging of payment ID as it should exist within storage already?

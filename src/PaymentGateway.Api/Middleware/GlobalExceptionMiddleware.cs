@@ -1,17 +1,50 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
 namespace PaymentGateway.Api.Middleware
 {
+    /// <summary>
+    /// A global exception handling middleware that catches unhandled exceptions in the pipeline,
+    /// logs them, and returns a standardized **Problem Details (RFC 7807)** response to the client.
+    /// </summary>
     public sealed class GlobalExceptionMiddleware
     {
+        #region Fields
+
+        /// <summary>
+        /// The next middleware in the request pipeline.
+        /// </summary>
         private readonly RequestDelegate _next;
+
+        /// <summary>
+        /// Logger for recording exceptions and warning messages.
+        /// </summary>
         private readonly ILogger<GlobalExceptionMiddleware> _logger;
+
+        /// <summary>
+        /// Provides information about the web hosting environment (e.g., Development, Production).
+        /// </summary>
         private readonly IHostEnvironment _env;
+
+        /// <summary>
+        /// The JSON serializer options used for writing the Problem Details response.
+        /// </summary>
         private readonly JsonSerializerOptions _json;
 
+        #endregion
+
+        #region Constructor
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GlobalExceptionMiddleware"/> class.
+        /// </summary>
+        /// <param name="next">The next request delegate in the pipeline.</param>
+        /// <param name="logger">The logger instance for this middleware.</param>
+        /// <param name="env">The host environment information.</param>
+        /// <param name="jsonOptions">The JSON serialization options.</param>
         public GlobalExceptionMiddleware(
             RequestDelegate next,
             ILogger<GlobalExceptionMiddleware> logger,
@@ -25,6 +58,15 @@ namespace PaymentGateway.Api.Middleware
             _json = jsonOptions.Value.JsonSerializerOptions;
         }
 
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// Invokes the middleware, calling the next delegate and catching any exceptions that occur.
+        /// </summary>
+        /// <param name="ctx">The <see cref="HttpContext"/> for the current request.</param>
+        /// <returns>A <see cref="Task"/> that represents the asynchronous operation.</returns>
         public async Task Invoke(HttpContext ctx)
         {
             try
@@ -41,30 +83,6 @@ namespace PaymentGateway.Api.Middleware
                     Status = StatusCodes.Status499ClientClosedRequest,
                     Title = "Request canceled",
                     Detail = "The client canceled the request."
-                });
-            }
-            catch (ValidationException vex)
-            {
-                _logger.LogWarning(vex, "Validation failed");
-                ctx.Response.Clear();
-                ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
-                await WriteProblem(ctx, new ProblemDetails
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    Title = "Validation error",
-                    Detail = vex.Message
-                });
-            }
-            catch (UnauthorizedAccessException uax)
-            {
-                _logger.LogWarning(uax, "Unauthorized access");
-                ctx.Response.Clear();
-                ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
-                await WriteProblem(ctx, new ProblemDetails
-                {
-                    Status = StatusCodes.Status403Forbidden,
-                    Title = "Forbidden",
-                    Detail = "You do not have permission to perform this action."
                 });
             }
             catch (HttpRequestException nex)
@@ -97,6 +115,16 @@ namespace PaymentGateway.Api.Middleware
             }
         }
 
+        #endregion
+
+        #region Private Helpers
+
+        /// <summary>
+        /// Writes the standardized RFC 7807 Problem Details response to the HTTP context response body.
+        /// </summary>
+        /// <param name="ctx">The <see cref="HttpContext"/> for the current request.</param>
+        /// <param name="problem">The <see cref="ProblemDetails"/> object containing error information.</param>
+        /// <returns>A <see cref="Task"/> that represents the asynchronous write operation.</returns>
         private async Task WriteProblem(HttpContext ctx, ProblemDetails problem)
         {
             problem.Type ??= "about:blank";
@@ -105,5 +133,7 @@ namespace PaymentGateway.Api.Middleware
             ctx.Response.ContentType = "application/problem+json";
             await JsonSerializer.SerializeAsync(ctx.Response.Body, problem, _json, ctx.RequestAborted);
         }
+
+        #endregion
     }
 }

@@ -8,10 +8,15 @@ namespace PaymentGateway.Api.Domain
     /// </summary>
     public class PostBankResponse
     {
-        [JsonPropertyName("authorized")]
+        /// <summary>
+        /// Gets or sets a value indicating whether the payment or transaction was successfully **authorized** by the bank or payment processor.
+        /// </summary>
         public bool Authorized { get; set; }
 
-        [JsonPropertyName("authorization_code")]
+        /// <summary>
+        /// Gets or sets the **authorization code** (or approval code) returned by the bank or payment processor for a successful transaction.
+        /// This code serves as proof that the transaction was approved.
+        /// </summary>
         public string AuthorizationCode { get; set; }
     }
 }

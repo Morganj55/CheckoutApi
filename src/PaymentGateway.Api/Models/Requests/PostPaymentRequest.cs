@@ -37,43 +37,4 @@ public class PostPaymentRequest
     public string Cvv { get; set; }
 
     #endregion
-
-    #region Public Methods
-
-    /// <summary>
-    /// Validates the expiry date of a card based on the provided validation context.
-    /// </summary>
-    /// <remarks>A card is considered expired if the current date is on or after the first day of the month
-    /// following the expiry month. The validation checks both the expiry month and year to determine whether the card
-    /// is valid.</remarks>
-    /// <param name="validationContext">The context in which the validation is performed. This typically includes information about the object being
-    /// validated.</param>
-    /// <returns>An <see cref="IEnumerable{ValidationResult}"/> containing validation errors, if any.  If the expiry date is in
-    /// the past, a <see cref="ValidationResult"/> is returned indicating the error;  otherwise, the sequence is empty.</returns>
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-    {
-        // Get the current date (we only care about month and year).
-        var today = DateTime.UtcNow;
-
-        // A card expires at the end of its expiry month.
-        // So, we construct the first day of the next month.
-        var firstDayOfNextMonth = new DateTime(ExpiryYear, ExpiryMonth, 1).AddMonths(1);
-
-        // If today's date is on or after the first day of the next month,
-        // then the card has expired.
-        // Example: 
-        // Card: 11/2025. FirstDayOfNextMonth = 12/01/2025.
-        // Today: 11/30/2025. 11/30 < 12/01. -> VALID.
-        // Today: 12/01/2025. 12/01 >= 12/01. -> EXPIRED.
-        if (today.Date >= firstDayOfNextMonth.Date)
-        {
-            // The validation has failed.
-            yield return new ValidationResult(
-                "The expiry date must be in the future.",
-                new[] { nameof(ExpiryMonth), nameof(ExpiryYear) }
-            );
-        }
-    }
-
-    #endregion
 }

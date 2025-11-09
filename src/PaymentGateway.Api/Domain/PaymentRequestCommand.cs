@@ -8,6 +8,9 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace PaymentGateway.Api.Domain
 {
+    /// <summary>
+    /// The command object sent to the Acquiring Bank to process a payment.
+    /// </summary>
     public class PaymentRequestCommand
     {
         #region Constructor
@@ -144,8 +147,6 @@ namespace PaymentGateway.Api.Domain
         /// <summary>
         /// Serializes this command to JSON with snake_case keys expected by the bank.
         /// </summary>
-        /// <param name="options">
-   
         /// <returns>A JSON string representing this command.</returns>
         public string ToJson()
         {

@@ -4,31 +4,13 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using PaymentGateway.Api.Tests.TestDataBuilders;
 using PaymentGateway.Api.Models.Requests;
 
 namespace PaymentGateway.Api.Tests.ModelValidation
 {
     public class PostPaymentRequestTests
     {
-        /// <summary>
-        /// Creates a PostPaymentRequest model that is pre-filled with
-        /// valid data. This is the "happy path" base for all tests.
-        /// </summary>
-        public static PostPaymentRequest CreateValidModel()
-        {
-            var futureDate = DateTime.UtcNow.AddMonths(6);
-            return new PostPaymentRequest
-            {
-                CardNumber = "1234567890123456", // 16 digits
-                ExpiryMonth = futureDate.Month,
-                ExpiryYear = futureDate.Year,
-                Currency = "USD",
-                Amount = 1050, 
-                Cvv = "123" 
-            };
-        }
-
         /// <summary>
         /// Helper to run all validations (Attributes and IValidatableObject)
         /// on the model, just like the ASP.NET Core framework does.
@@ -57,7 +39,7 @@ namespace PaymentGateway.Api.Tests.ModelValidation
         public void PostPaymentRequest_Valid_ValidRequest_Pass()
         {
             // Arrange
-            var model = CreateValidModel();
+            var model = PostPaymnetRequestBuilder.Build();
 
             // Act
             var results = ValidateModel(model);
@@ -74,7 +56,7 @@ namespace PaymentGateway.Api.Tests.ModelValidation
         public void PostPaymentRequest_Invalid_CardNumber_Fail(string cardNumber)
         {
             // Arrange
-            var model = CreateValidModel();
+            var model = PostPaymnetRequestBuilder.Build();
             model.CardNumber = cardNumber;
 
             // Act
@@ -91,7 +73,7 @@ namespace PaymentGateway.Api.Tests.ModelValidation
         public void PostPaymentRequest_Invalid_ExpiryMonth_Fail(int month)
         {
             // Arrange
-            var model = CreateValidModel();
+            var model = PostPaymnetRequestBuilder.Build();
             model.ExpiryMonth = month;
 
             // Set year to something valid so we only test the month's [Range]
@@ -109,7 +91,7 @@ namespace PaymentGateway.Api.Tests.ModelValidation
         public void PostPaymentRequest_Valid_ExpiryDate_PassesForNextMonth()
         {
             // Arrange
-            var model = CreateValidModel();
+            var model = PostPaymnetRequestBuilder.Build();
             var nextMonth = DateTime.UtcNow.AddMonths(1);
             model.ExpiryMonth = nextMonth.Month;
             model.ExpiryYear = nextMonth.Year;
@@ -126,7 +108,7 @@ namespace PaymentGateway.Api.Tests.ModelValidation
         [InlineData("")]
         public void PostPaymentRequest_Invalid_CVV_Required_Fail(string value)
         {
-            var model = CreateValidModel();
+            var model = PostPaymnetRequestBuilder.Build();
             model.Currency = value;
 
             var results = ValidateModel(model);
@@ -143,7 +125,7 @@ namespace PaymentGateway.Api.Tests.ModelValidation
         public void PostPaymentRequest_Invalid_CVV_Length_Fail(string cvv)
         {
             // Arrange
-            var model = CreateValidModel();
+            var model = PostPaymnetRequestBuilder.Build();
             model.Cvv = cvv;
 
             // Act
@@ -158,7 +140,7 @@ namespace PaymentGateway.Api.Tests.ModelValidation
         public void PostPaymentRequest_Valid_CVV_Length3_Pass()
         {
             // Arrange
-            var model = CreateValidModel();
+            var model = PostPaymnetRequestBuilder.Build();
             model.Cvv = "123";
 
             // Act
@@ -176,7 +158,7 @@ namespace PaymentGateway.Api.Tests.ModelValidation
         public void PostPaymentRequest_Invalid_Amount_Fail(int amount)
         {
             // Arrange
-            var model = CreateValidModel();
+            var model = PostPaymnetRequestBuilder.Build();
             model.Amount = amount;
 
             // Act
@@ -193,7 +175,7 @@ namespace PaymentGateway.Api.Tests.ModelValidation
         public void PostPaymentRequest_Valid_Amount_Pass(int amount)
         {
             // Arrange
-            var model = CreateValidModel();
+            var model = PostPaymnetRequestBuilder.Build();
             model.Amount = amount;
 
             // Act

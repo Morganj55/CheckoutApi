@@ -13,27 +13,14 @@ using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Routes;
 using PaymentGateway.Api.Services;
 using PaymentGateway.Api.Tests.Stubs;
+using PaymentGateway.Api.Tests.TestDataBuilders;
 using PaymentGateway.Api.Utility;
 
 namespace PaymentGateway.Api.Tests.Controllers;
 
 public class PaymentsControllerTests
 {
-    private static PaymentsController CreateController(StubPaymentService stub)
-       => new PaymentsController(stub);
-
-    private static PaymentRequestResponse MakePaymentRequestResponse(Guid id) => new PaymentRequestResponse
-    {
-        Id = id,
-        Amount = 11111,
-        Currency = "GBP",
-        CardNumberLastFour = "4242",
-        ExpiryMonth = 12,
-        ExpiryYear = 2099,
-        Status = PaymentStatus.Authorized
-    };
-
-    // -------- GET --------
+    private static PaymentsController CreateController(StubPaymentService stub)=> new PaymentsController(stub);
 
     [Fact]
     public async Task GetPaymentAsync_EmptyId_ReturnsBadRequest()
@@ -57,7 +44,7 @@ public class PaymentsControllerTests
         {
             GetHandler = (gid, _) =>
             {
-                var body = MakePaymentRequestResponse(gid);
+                var body = PaymentRequestResponseBuilder.Build(gid);
                 return Task.FromResult(OperationResult<PaymentRequestResponse>.Success(body));
             }
         };
@@ -66,7 +53,7 @@ public class PaymentsControllerTests
         var result = await controller.GetPaymentAsync(id);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
-        var body = Assert.IsType<PaymentRequestResponse>(ok.Value);
+        var body = Assert.IsType<GetPaymentResponse>(ok.Value);
         Assert.Equal(id, body.Id);
         Assert.Equal(PaymentStatus.Authorized, body.Status);
         Assert.Equal(id, stub.LastGetId);
@@ -89,8 +76,6 @@ public class PaymentsControllerTests
         Assert.IsType<NotFoundResult>(result.Result);
         Assert.Equal(id, stub.LastGetId);
     }
-
-    // -------- POST --------
 
     [Fact]
     public async Task PostPaymentAsync_InvalidBody_ReturnsBadRequest()
@@ -157,7 +142,7 @@ public class PaymentsControllerTests
         };
 
         var id = Guid.NewGuid();
-        var repoModel = MakePaymentRequestResponse(id);
+        var repoModel = PaymentRequestResponseBuilder.Build(id);
 
         var stub = new StubPaymentService
         {

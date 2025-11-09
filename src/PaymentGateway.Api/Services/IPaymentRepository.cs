@@ -17,7 +17,7 @@ namespace PaymentGateway.Api.Services
         /// Adds a payment response to the collection for further processing or storage.
         /// </summary>
         /// <param name="payment">The payment response to add. Cannot be null.</param>
-        OperationResult<bool> Add(PaymentRequestResponse payment);
+        Task<OperationResult<bool>> Add(PaymentRequestResponse payment);
 
         /// <summary>   
         /// Retrieves the payment response associated with the specified identifier.
@@ -32,7 +32,7 @@ namespace PaymentGateway.Api.Services
         /// </summary>
         /// <param name="updatedResponse">The updated response</param>
         /// <returns>The response if success</returns>
-        OperationResult<PaymentRequestResponse> UpdatePaymentStatus(Guid id, PaymentStatus status);
+        Task<OperationResult<PaymentRequestResponse>> UpdatePaymentStatus(Guid id, PaymentStatus status);
 
         /// <summary>
         /// Gets the total number of payments processed.

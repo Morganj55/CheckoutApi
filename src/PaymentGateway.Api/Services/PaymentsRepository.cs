@@ -47,7 +47,7 @@ public class PaymentsRepository : IPaymentRepository
     /// Adds a new payment response object to the collection of payments.
     /// </summary>
     /// <param name="payment">The <see cref="PostPaymentResponse"/> object to be added.</param>
-    public OperationResult<bool> Add(PaymentRequestResponse payment)
+    public async Task<OperationResult<bool>> Add(PaymentRequestResponse payment)
     {
         if (Payments.TryAdd(payment.Id, payment))
         {
@@ -80,7 +80,7 @@ public class PaymentsRepository : IPaymentRepository
     /// <param name="id">The id of the payment</param>
     /// <param name="status">The updated status</param>
     /// <returns>The updated payment request</returns>
-    public OperationResult<PaymentRequestResponse> UpdatePaymentStatus(Guid id, Models.PaymentStatus status)
+    public async Task<OperationResult<PaymentRequestResponse>> UpdatePaymentStatus(Guid id, Models.PaymentStatus status)
     {
         if (Payments.TryGetValue(id, out PaymentRequestResponse value))
         {

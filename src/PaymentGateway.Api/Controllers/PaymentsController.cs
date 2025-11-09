@@ -7,19 +7,47 @@ using PaymentGateway.Api.Services;
 
 namespace PaymentGateway.Api.Controllers;
 
+/// <summary>
+/// Controller responsible for handling payment-related API requests, including processing new payments and retrieving past payment details.
+/// </summary>
 [Route("api/v1/[controller]")]
 [ApiController]
 public class PaymentsController : Controller
 {
+    #region Fields
+
+    /// <summary>
+    /// The payment service used to handle the business logic for payment operations.
+    /// </summary>
     private readonly IPaymentService _payService;
 
+    #endregion
+
+    #region Constructor
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PaymentsController"/> class.
+    /// </summary>
+    /// <param name="payService">The payment service injected by the dependency injection container.</param>
     public PaymentsController(IPaymentService payService)
     {
         _payService = payService;
     }
 
+    #endregion
+
+    #region Public Methods
+
+    /// <summary>
+    /// Retrieves the details of a previously processed payment by its ID.
+    /// </summary>
+    /// <param name="id">The unique identifier (GUID) of the payment to retrieve.</param>
+    /// <returns>
+    /// An <see cref="ActionResult{T}"/> containing the <see cref="PostPaymentResponse"/> if found (HTTP 200 Ok),
+    /// or a 404 Not Found if no payment exists for the given ID, or 400 Bad Request for an invalid ID.
+    /// </returns>
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<PostPaymentResponse>> GetPaymentAsync(Guid id)
+    public async Task<ActionResult<GetPaymentResponse>> GetPaymentAsync(Guid id)
     {
         if (id == Guid.Empty)
         {
@@ -27,14 +55,31 @@ public class PaymentsController : Controller
         }
 
         var previousPaymentRequest = await _payService.GetPaymentAsync(id);
-        if (previousPaymentRequest.IsSuccess)
+        if (previousPaymentRequest.IsFailure)
         {
-            return Ok(previousPaymentRequest.Data);
+            return NotFound();
         }
 
-        return NotFound();
+        return Ok(new GetPaymentResponse
+        {
+            Id = previousPaymentRequest.Data!.Id,
+            Amount = previousPaymentRequest.Data.Amount,
+            Currency = previousPaymentRequest.Data.Currency,
+            CardNumberLastFour = previousPaymentRequest.Data.CardNumberLastFour,
+            ExpiryMonth = previousPaymentRequest.Data.ExpiryMonth,
+            ExpiryYear = previousPaymentRequest.Data.ExpiryYear,
+            Status = previousPaymentRequest.Data.Status
+        });
     }
 
+    /// <summary>
+    /// Processes a new payment request by validating the input and delegating the payment logic to the service layer.
+    /// </summary>
+    /// <param name="request">The payment request details provided in the request body.</param>
+    /// <returns>
+    /// An <see cref="ActionResult{T}"/> containing the processed <see cref="PostPaymentResponse"/> (HTTP 200 Ok),
+    /// a 400 Bad Request for validation errors, or a 500-level status for processing errors.
+    /// </returns>
     [HttpPost]
     public async Task<ActionResult<PostPaymentResponse>> PostPaymentAsync([FromBody] PostPaymentRequest request)
     {
@@ -53,9 +98,11 @@ public class PaymentsController : Controller
         var processPayResult = await _payService.ProcessPaymentAsync(payRequest);
         if (processPayResult.IsFailure)
         {
-            return StatusCode((int)processPayResult.Error!.Code, processPayResult.Error.Message);
+            // Use the status code from the error object if available, otherwise default to a generic error
+            return StatusCode((int)processPayResult.Error.Code, processPayResult.Error.Message);
         }
 
+        // Map the result data to the response model
         return Ok(new PostPaymentResponse
         {
             Id = processPayResult.Data!.Id,
@@ -67,4 +114,6 @@ public class PaymentsController : Controller
             Status = processPayResult.Data.Status
         });
     }
+
+    #endregion
 }

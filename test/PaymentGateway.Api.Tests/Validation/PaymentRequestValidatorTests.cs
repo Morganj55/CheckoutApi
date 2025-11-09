@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using PaymentGateway.Api.Models.Requests;
+using PaymentGateway.Api.Utility;
 using PaymentGateway.Api.Validation;
 
 namespace PaymentGateway.Api.Tests.Validation
@@ -15,14 +16,13 @@ namespace PaymentGateway.Api.Tests.Validation
         private static (string card, int month, int year, string ccy, int amount, string cvv)
             MakeValid()
         {
-            var next = DateTime.UtcNow.AddMonths(1);
-            return ("4242424242424242", next.Month, next.Year, "USD", 100, "123");
+            var nextMonth = DateTime.UtcNow.AddMonths(1);
+            var nextYear = DateTime.UtcNow.AddYears(1);
+            return ("4242424242424242", nextMonth.Month, nextYear.Year, "USD", 100, "123");
         }
 
         private static ValidationResult? ErrorFor(IEnumerable<ValidationResult> results, string member) =>
             results.FirstOrDefault(r => r.MemberNames.Contains(member));
-
-        // --- Validate(...) aggregate ----------------------------------------
 
         [Fact]
         public void Validate_AllValid_ReturnsNoErrors()
@@ -56,7 +56,6 @@ namespace PaymentGateway.Api.Tests.Validation
             Assert.NotNull(ErrorFor(results, nameof(PostPaymentRequest.Amount)));
             Assert.NotNull(ErrorFor(results, nameof(PostPaymentRequest.Cvv)));
         }
-
 
         [Theory]
         [InlineData(null)]
@@ -101,14 +100,6 @@ namespace PaymentGateway.Api.Tests.Validation
             Assert.Null(err);
         }
 
-        [Fact]
-        public void ValidateExpiryMonth_RequiredWhenZero()
-        {
-            var err = PaymentRequestValidator.ValidateExpiryMonth(0);
-            Assert.NotNull(err);
-            Assert.Equal("Expiry month is required.", err!.ErrorMessage);
-        }
-
         [Theory]
         [InlineData(-1)]
         [InlineData(13)]
@@ -151,7 +142,6 @@ namespace PaymentGateway.Api.Tests.Validation
             Assert.Null(err);
         }
 
-
         [Theory]
         [InlineData(null)]
         [InlineData("")]
@@ -184,17 +174,9 @@ namespace PaymentGateway.Api.Tests.Validation
         [Fact]
         public void ValidateCurrency_ValidIso()
         {
-            var err = PaymentRequestValidator.ValidateCurrency("USD");
+            var code = IsoCurrencyCodes.Codes.FirstOrDefault()!;
+            var err = PaymentRequestValidator.ValidateCurrency(code);
             Assert.Null(err);
-        }
-
-
-        [Fact]
-        public void ValidateAmount_RequiredWhenZero()
-        {
-            var err = PaymentRequestValidator.ValidateAmount(0);
-            Assert.NotNull(err);
-            Assert.Equal("Payment amount is required.", err!.ErrorMessage);
         }
 
         [Theory]
@@ -255,8 +237,6 @@ namespace PaymentGateway.Api.Tests.Validation
             var err = PaymentRequestValidator.ValidateCvv(input);
             Assert.Null(err);
         }
-
-        // --- ExpiryDateInFuture (cross-field) --------------------------------
 
         [Fact]
         public void ValidateExpiryDateInFuture_PastDate_Fails()

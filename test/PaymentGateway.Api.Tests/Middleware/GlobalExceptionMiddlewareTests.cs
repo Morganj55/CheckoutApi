@@ -15,11 +15,11 @@ namespace PaymentGateway.Api.Tests.Middleware
         [Fact]
         public async Task When_Next_Throws_UnhandledException_Returns_Problem500()
         {
-            // arrange
+            // Arrange
             var ctx = new DefaultHttpContext();
             ctx.Response.Body = new MemoryStream();
 
-            var jsonOpts = Options.Create(new JsonOptions()); // uses default STJ opts
+            var jsonOpts = Options.Create(new JsonOptions());
             var env = new FakeHostEnvironment(isDevelopment: false);
 
             var middleware = new GlobalExceptionMiddleware(
@@ -28,10 +28,10 @@ namespace PaymentGateway.Api.Tests.Middleware
                 env: env,
                 jsonOptions: jsonOpts);
 
-            // act
+            // Act
             await middleware.Invoke(ctx);
 
-            // assert
+            // Assert
             Assert.Equal(StatusCodes.Status500InternalServerError, ctx.Response.StatusCode);
             Assert.Equal("application/problem+json", ctx.Response.ContentType);
 

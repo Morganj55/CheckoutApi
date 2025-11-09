@@ -8,20 +8,12 @@ using System.Threading.Tasks;
 using PaymentGateway.Api.Clients;
 using PaymentGateway.Api.Domain;
 using PaymentGateway.Api.Tests.Stubs;
+using PaymentGateway.Api.Tests.TestDataBuilders;
 
 namespace PaymentGateway.Api.Tests.Clients
 {
     public class ExampleBankTests
     {
-        private static PaymentRequestCommand ValidCommandEndingWith(string lastDigit)
-        {
-            var next = DateTime.UtcNow.AddMonths(1);
-            // 15 digits + lastDigit → total 16
-            var card = "424242424242424" + lastDigit;
-            PaymentRequestCommand.TryCreate(card, next.Month, next.Year, "USD", 100, "123", out var cmd, out _);
-            return cmd!;
-        }
-
         [Fact]
         public async Task ProcessPaymentAsync_OddLastDigit_ReturnsAuthorizedWithCode()
         {
@@ -45,7 +37,7 @@ namespace PaymentGateway.Api.Tests.Clients
 
             var http = new HttpClient(handler) { BaseAddress = new Uri("https://simulator.bank") };
             var client = new ExampleBank(http);
-            var cmd = ValidCommandEndingWith("1"); // odd
+            var cmd = PaymentRequestCommandBuilder.Build('3');
 
             // Act
             var result = await client.ProcessPaymentAsync(cmd);
@@ -73,7 +65,7 @@ namespace PaymentGateway.Api.Tests.Clients
 
             var http = new HttpClient(handler) { BaseAddress = new Uri("https://simulator.bank") };
             var client = new ExampleBank(http);
-            var cmd = ValidCommandEndingWith("2"); // even
+            var cmd = PaymentRequestCommandBuilder.Build('2'); // even
 
             var result = await client.ProcessPaymentAsync(cmd);
 
@@ -96,7 +88,7 @@ namespace PaymentGateway.Api.Tests.Clients
 
             var http = new HttpClient(handler) { BaseAddress = new Uri("https://simulator.bank") };
             var client = new ExampleBank(http);
-            var cmd = ValidCommandEndingWith("0"); // zero
+            var cmd = PaymentRequestCommandBuilder.Build('0'); // zero
 
             var result = await client.ProcessPaymentAsync(cmd);
 
