@@ -20,16 +20,7 @@ namespace PaymentGateway.Api.Tests.TestDataBuilders
 
         public static PaymentRequestResponse Build(Guid id, PaymentStatus status = PaymentStatus.Authorized)
         {
-            return new PaymentRequestResponse
-            {
-                Id = id,
-                CardNumberLastFour = _cardNumberLastFour,
-                ExpiryMonth = _expiryMonth,
-                ExpiryYear = _expiryYear,
-                Currency = _currency,
-                Amount = _amount,
-                Status = status
-            };
+            return new PaymentRequestResponse(id, status, _cardNumberLastFour, _expiryMonth, _expiryYear, _currency, _amount);
         }
     }
 }

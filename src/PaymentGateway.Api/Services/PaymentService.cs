@@ -58,16 +58,14 @@ namespace PaymentGateway.Api.Services
         /// </returns>
         public async Task<OperationResult<PaymentRequestResponse>> ProcessPaymentAsync(PaymentRequestCommand request)
         {
-            var paymentRecord = new PaymentRequestResponse
-            {
-                Id = Guid.NewGuid(),
-                Amount = request.Amount,
-                Currency = request.Currency,
-                CardNumberLastFour = request.CardNumber.Substring(request.CardNumber.Length - 4, 4),
-                ExpiryMonth = request.ExpiryMonth,
-                ExpiryYear = request.ExpiryYear,
-                Status = Models.PaymentStatus.Pending,
-            };
+            var paymentRecord = new PaymentRequestResponse(
+                Guid.NewGuid(),
+                Models.PaymentStatus.Pending,
+                request.CardNumber,
+                request.ExpiryMonth,
+                request.ExpiryYear,
+                request.Currency,
+                request.Amount);
 
             // Persist the payment record before processing
             var addResult = await _paymentRepository.Add(paymentRecord);
@@ -84,7 +82,7 @@ namespace PaymentGateway.Api.Services
             }
 
             // Update the payment record status based on the bank's response
-            var newPaymentStatus =  bankResult.Data!.Authorized ? Models.PaymentStatus.Authorized : Models.PaymentStatus.Declined;
+            var newPaymentStatus = bankResult.Data!.Authorized ? Models.PaymentStatus.Authorized : Models.PaymentStatus.Declined;
             var updatePaymentResult = await _paymentRepository.UpdatePaymentStatus(paymentRecord.Id, newPaymentStatus);
             if (updatePaymentResult.IsFailure)
             {

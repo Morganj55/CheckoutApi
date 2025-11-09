@@ -25,16 +25,15 @@ namespace PaymentGateway.Api.Tests.Stubs
         {
             if (ProcessHandler != null) return ProcessHandler(command, new CancellationToken());
 
-            var resp = new PaymentRequestResponse
-            {
-                Id = Guid.NewGuid(),
-                Amount = command.Amount,
-                Currency = command.Currency,
-                CardNumberLastFour = command.CardNumber[^4..],
-                ExpiryMonth = command.ExpiryMonth,
-                ExpiryYear = command.ExpiryYear,
-                Status = PaymentStatus.Authorized
-            };
+            var resp = new PaymentRequestResponse(
+                Guid.NewGuid(), 
+                PaymentStatus.Authorized, 
+                command.CardNumber,
+                command.ExpiryMonth, 
+                command.ExpiryYear,
+                command.Currency, 
+                command.Amount);
+
             return Task.FromResult(OperationResult<PaymentRequestResponse>.Success(resp));
         }
     }

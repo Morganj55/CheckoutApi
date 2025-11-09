@@ -61,15 +61,15 @@ public class PaymentsController : Controller
         }
 
         return Ok(new GetPaymentResponse
-        {
-            Id = previousPaymentRequest.Data!.Id,
-            Amount = previousPaymentRequest.Data.Amount,
-            Currency = previousPaymentRequest.Data.Currency,
-            CardNumberLastFour = previousPaymentRequest.Data.CardNumberLastFour,
-            ExpiryMonth = previousPaymentRequest.Data.ExpiryMonth,
-            ExpiryYear = previousPaymentRequest.Data.ExpiryYear,
-            Status = previousPaymentRequest.Data.Status
-        });
+        (
+            previousPaymentRequest.Data!.Id,
+            previousPaymentRequest.Data.Status,
+            previousPaymentRequest.Data.CardNumberLastFour,
+            previousPaymentRequest.Data.ExpiryMonth,
+            previousPaymentRequest.Data.ExpiryYear,
+            previousPaymentRequest.Data.Currency,
+            previousPaymentRequest.Data.Amount
+        ));
     }
 
     /// <summary>
@@ -102,17 +102,15 @@ public class PaymentsController : Controller
             return StatusCode((int)processPayResult.Error.Code, processPayResult.Error.Message);
         }
 
-        // Map the result data to the response model
-        return Ok(new PostPaymentResponse
-        {
-            Id = processPayResult.Data!.Id,
-            Amount = processPayResult.Data.Amount,
-            Currency = processPayResult.Data.Currency,
-            CardNumberLastFour = processPayResult.Data.CardNumberLastFour,
-            ExpiryMonth = processPayResult.Data.ExpiryMonth,
-            ExpiryYear = processPayResult.Data.ExpiryYear,
-            Status = processPayResult.Data.Status
-        });
+        // Map the result data to the response model 
+        return Ok(new PostPaymentResponse(
+            processPayResult.Data!.Id,
+            processPayResult.Data.Status,
+            processPayResult.Data.CardNumberLastFour,
+            processPayResult.Data.ExpiryMonth,
+            processPayResult.Data.ExpiryYear,
+            processPayResult.Data.Currency,
+            processPayResult.Data.Amount));
     }
 
     #endregion

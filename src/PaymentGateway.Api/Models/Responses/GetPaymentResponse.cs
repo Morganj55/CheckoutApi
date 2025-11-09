@@ -1,4 +1,6 @@
-﻿namespace PaymentGateway.Api.Models.Responses;
+﻿using System.Collections.Generic;
+
+namespace PaymentGateway.Api.Models.Responses;
 
 /// <summary>
 /// Represents the response model returned to the client when retrieving the details of a specific, 
@@ -6,38 +8,77 @@
 /// </summary>
 public class GetPaymentResponse
 {
-    /// <summary>
-    /// Gets or sets the unique identifier (GUID) of the processed payment transaction.
-    /// </summary>
-    public Guid Id { get; set; }
+    #region Constructor
 
     /// <summary>
-    /// Gets or sets the final or current status of the payment (e.g., Authorized, Failed).
+    /// Initializes a new instance of the <see cref="GetPaymentResponse"/> class.
     /// </summary>
-    public PaymentStatus Status { get; set; }
+    /// <param name="id">The unique identifier (GUID) of the processed payment transaction.</param>
+    /// <param name="status">The final or current status of the payment (e.g., Authorized, Failed).</param>
+    /// <param name="cardNumberLastFour">The last four digits of the card number used for the transaction.</param>
+    /// <param name="expiryMonth">The expiry month of the card.</param>
+    /// <param name="expiryYear">The expiry year of the card.</param>
+    /// <param name="currency">The ISO 4217 currency code of the transaction (e.g., "GBP").</param>
+    /// <param name="amount">The monetary amount of the payment, typically in the smallest currency unit.</param>
+    public GetPaymentResponse(
+        Guid id,
+        PaymentStatus status,
+        string cardNumberLastFour,
+        int expiryMonth,
+        int expiryYear,
+        string currency,
+        int amount)
+    {
+        if (string.IsNullOrWhiteSpace(cardNumberLastFour) || cardNumberLastFour.Length != 4 || !cardNumberLastFour.All(char.IsDigit))
+            throw new ArgumentException("CardNumberLastFour must be exactly 4 digits.", nameof(cardNumberLastFour));
+
+        CardNumberLastFour = cardNumberLastFour;
+        Id = id;
+        Status = status;
+        ExpiryMonth = expiryMonth;
+        ExpiryYear = expiryYear;
+        Currency = currency;
+        Amount = amount;
+    }
+
+    #endregion
+
+    #region Properties
 
     /// <summary>
-    /// Gets or sets the last four digits of the card number used for the transaction.
+    /// Gets the unique identifier (GUID) of the processed payment transaction.
     /// </summary>
-    public string CardNumberLastFour { get; set; }
+    public Guid Id { get; }
 
     /// <summary>
-    /// Gets or sets the expiry month of the card.
+    /// Gets the final or current status of the payment (e.g., Authorized, Failed).
     /// </summary>
-    public int ExpiryMonth { get; set; }
+    public PaymentStatus Status { get; }
 
     /// <summary>
-    /// Gets or sets the expiry year of the card.
+    /// Gets the last four digits of the card number used for the transaction.
     /// </summary>
-    public int ExpiryYear { get; set; }
+    public string CardNumberLastFour { get; }
 
     /// <summary>
-    /// Gets or sets the ISO 4217 currency code of the transaction (e.g., "GBP").
+    /// Gets the expiry month of the card.
     /// </summary>
-    public string Currency { get; set; }
+    public int ExpiryMonth { get; }
 
     /// <summary>
-    /// Gets or sets the monetary amount of the payment, typically in the smallest currency unit (e.g., cents or pence).
+    /// Gets the expiry year of the card.
     /// </summary>
-    public int Amount { get; set; }
+    public int ExpiryYear { get; }
+
+    /// <summary>
+    /// Gets the ISO 4217 currency code of the transaction (e.g., "GBP").
+    /// </summary>
+    public string Currency { get; }
+
+    /// <summary>
+    /// Gets the monetary amount of the payment, typically in the smallest currency unit (e.g., cents or pence).
+    /// </summary>
+    public int Amount { get; }
+
+    #endregion
 }

@@ -48,7 +48,6 @@ namespace PaymentGateway.Api.Domain
         /// <summary>
         /// Gets the card primary account number (PAN).
         /// </summary>
-        [JsonPropertyName("card_number")]
         public string CardNumber { get; private set; }
 
         /// <summary>
@@ -64,25 +63,21 @@ namespace PaymentGateway.Api.Domain
         /// <summary>
         /// Gets the formatted expiry date as <c>MM/YYYY</c>.
         /// </summary>
-        [JsonPropertyName("expiry_date")]
         public string ExpiryDate => FormatExpiryDate(ExpiryMonth, ExpiryYear);
 
         /// <summary>
         /// Gets the ISO 4217 currency code (upper-case).
         /// </summary>
-        [JsonPropertyName("currency")]
         public string Currency { get; private set; }
 
         /// <summary>
         /// Gets the payment amount in minor units (e.g., cents).
         /// </summary>
-        [JsonPropertyName("amount")]
         public int Amount { get; private set; }
 
         /// <summary>
         /// Gets the card verification value (CVV).
         /// </summary>
-        [JsonPropertyName("cvv")]
         public string Cvv { get; private set; }
 
         #endregion
