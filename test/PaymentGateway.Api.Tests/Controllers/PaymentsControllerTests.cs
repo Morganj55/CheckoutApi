@@ -46,7 +46,7 @@ public class PaymentsControllerTests
         var bad = Assert.IsType<BadRequestObjectResult>(result.Result);
         Assert.Equal(400, bad.StatusCode);
         Assert.Equal("Invalid payment ID.", bad.Value);
-        Assert.Null(stub.LastGetId); // should short-circuit before service call
+        Assert.Null(stub.LastGetId);
     }
 
     [Fact]
