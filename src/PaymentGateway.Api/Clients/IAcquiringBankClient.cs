@@ -4,7 +4,7 @@ using PaymentGateway.Api.Utility;
 
 namespace PaymentGateway.Api.Clients
 {
-    public interface IAquiringBankClient
+    public interface IAcquiringBankClient
     {
         /// <summary>
         /// Processes a payment request asynchronously and returns the response from the payment gateway.

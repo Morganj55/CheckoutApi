@@ -13,9 +13,9 @@ namespace PaymentGateway.Api.Clients
     /// Represents a client for interacting with the ExampleBank acquiring bank API to process payment requests.
     /// </summary>
     /// <remarks>This class provides functionality to send payment requests to the ExampleBank acquiring bank
-    /// and retrieve the corresponding responses. It implements the <see cref="IAquiringBankClient"/> interface,
+    /// and retrieve the corresponding responses. It implements the <see cref="IAcquiringBankClient"/> interface,
     /// ensuring compatibility with systems that rely on this abstraction.</remarks>
-    public class ExampleBank : IAquiringBankClient
+    public class ExampleBank : IAcquiringBankClient
     {
         private readonly HttpClient _httpClient;
 

@@ -25,5 +25,18 @@ namespace PaymentGateway.Api.Services
         /// cref="PostPaymentResponse"/> object with the outcome of the payment processing, including any relevant
         /// status or confirmation details.</returns>
         Task<OperationResult<PaymentRequestResponse>> ProcessPaymentAsync(PaymentRequestCommand request);
+
+        /// <summary>
+        /// Retrieves the payment details for the specified payment identifier.
+        /// </summary>
+        /// <remarks>The method performs an asynchronous operation to fetch payment details. Ensure that
+        /// the  provided <paramref name="id"/> corresponds to a valid payment record. If the payment is  not found, the
+        /// <see cref="OperationResult{T}.IsSuccess"/> property of the result will be  <see
+        /// langword="false"/>.</remarks>
+        /// <param name="id">The unique identifier of the payment to retrieve.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains an  <see
+        /// cref="OperationResult{T}"/> object with the payment details encapsulated in a  <see
+        /// cref="PaymentRequestResponse"/> instance if the operation is successful.</returns>
+        Task<OperationResult<PaymentRequestResponse>> GetPaymentAsync(Guid id);
     }
 }

@@ -11,7 +11,7 @@ using PaymentGateway.Api.Utility;
 
 namespace PaymentGateway.Api.Tests.Stubs
 {
-    internal class AquiringBankClientStub : IAquiringBankClient
+    internal class AquiringBankClientStub : IAcquiringBankClient
     {
         private readonly bool _success;
         private readonly PostBankResponse _response;

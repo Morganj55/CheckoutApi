@@ -1,6 +1,9 @@
 ﻿using PaymentGateway.Api.Domain;
 using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Models.Responses;
+using PaymentGateway.Api.Utility;
+
+using System.Collections.Concurrent;
 
 namespace PaymentGateway.Api.Services;
 
@@ -19,6 +22,7 @@ public class PaymentsRepository : IPaymentRepository
     /// </summary>
     public PaymentsRepository()
     {
+        Payments = new();
     }
 
     #endregion
@@ -33,7 +37,7 @@ public class PaymentsRepository : IPaymentRepository
     /// <summary>
     /// Gets the collection of payment responses.
     /// </summary>
-    private List<PaymentRequestResponse> Payments = new();
+    private ConcurrentDictionary<Guid, PaymentRequestResponse> Payments { get; }
 
     #endregion
 
@@ -43,9 +47,14 @@ public class PaymentsRepository : IPaymentRepository
     /// Adds a new payment response object to the collection of payments.
     /// </summary>
     /// <param name="payment">The <see cref="PostPaymentResponse"/> object to be added.</param>
-    public void Add(PaymentRequestResponse payment)
+    public OperationResult<bool> Add(PaymentRequestResponse payment)
     {
-        Payments.Add(payment);
+        if (Payments.TryAdd(payment.Id, payment))
+        {
+            return OperationResult<bool>.Success(true);
+        }
+
+        return OperationResult<bool>.Failure(ErrorKind.Unexpected, "Could not add payment", null);
     }
 
     /// <summary>
@@ -55,9 +64,14 @@ public class PaymentsRepository : IPaymentRepository
     /// <returns>
     /// The matching <see cref="PostPaymentResponse"/> object if found; otherwise, returns <see langword="null"/>.
     /// </returns>
-    public PaymentRequestResponse Get(Guid id)
+    public async Task<OperationResult<PaymentRequestResponse>> GetAsync(Guid id)
     {
-        return Payments.FirstOrDefault(p => p.Id == id);
+        if (Payments.TryGetValue(id, out PaymentRequestResponse value))
+        {
+            return OperationResult<PaymentRequestResponse>.Success(value);
+        }
+
+        return OperationResult<PaymentRequestResponse>.Failure(ErrorKind.NotFound, "Payment not found.", System.Net.HttpStatusCode.NotFound);
     }
 
     #endregion

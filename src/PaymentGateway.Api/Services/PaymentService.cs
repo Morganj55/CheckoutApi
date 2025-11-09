@@ -22,7 +22,11 @@ namespace PaymentGateway.Api.Services
         /// The repository used for accessing and persisting payment data.
         /// </summary>
         private readonly IPaymentRepository _paymentRepository;
-        private readonly IAquiringBankClient _bankClient;
+
+        /// <summary>
+        /// The aquiring bank client
+        /// </summary>
+        private readonly IAcquiringBankClient _bankClient;
 
         #endregion
 
@@ -32,7 +36,7 @@ namespace PaymentGateway.Api.Services
         /// Initializes a new instance of the <see cref="PaymentService"/> class.
         /// </summary>
         /// <param name="paymentRepository">The payment repository instance used for data access, injected via dependency injection.</param>
-        public PaymentService(IPaymentRepository paymentRepository, IAquiringBankClient bankClient)
+        public PaymentService(IPaymentRepository paymentRepository, IAcquiringBankClient bankClient)
         {
             _paymentRepository = paymentRepository;
             _bankClient = bankClient;
@@ -76,6 +80,20 @@ namespace PaymentGateway.Api.Services
             }
 
             return OperationResult<PaymentRequestResponse>.Success(paymentResponse);
+        }
+
+        /// <summary>
+        /// Retrieves the payment details for the specified payment identifier.
+        /// </summary>
+        /// <remarks>This method retrieves payment information from the underlying data store. Ensure that
+        /// the provided <paramref name="id"/> corresponds to an existing payment record.</remarks>
+        /// <param name="id">The unique identifier of the payment to retrieve.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains an <see
+        /// cref="OperationResult{T}"/> object that includes the payment details if the operation is successful, or an
+        /// error message if it fails.</returns>
+        public Task<OperationResult<PaymentRequestResponse>> GetPaymentAsync(Guid id)
+        {
+            return _paymentRepository.GetAsync(id);
         }
 
         #endregion

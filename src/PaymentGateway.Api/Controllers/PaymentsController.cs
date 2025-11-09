@@ -11,20 +11,28 @@ namespace PaymentGateway.Api.Controllers;
 [ApiController]
 public class PaymentsController : Controller
 {
-    private readonly IPaymentRepository _paymentsRepository;
     private readonly IPaymentService _payService;
 
-    public PaymentsController(IPaymentRepository paymentsRepository, IPaymentService payService)
+    public PaymentsController(IPaymentService payService)
     {
-        _paymentsRepository = paymentsRepository;
         _payService = payService;
     }
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<PostPaymentResponse>> GetPaymentAsync(Guid id)
     {
-        var payment = _paymentsRepository.Get(id);
-        return new OkObjectResult(payment);
+        if (id == Guid.Empty)
+        {
+            return BadRequest("Invalid payment ID.");
+        }
+
+        var previousPaymentRequest = await _payService.GetPaymentAsync(id);
+        if (previousPaymentRequest.IsSuccess)
+        {
+            return Ok(previousPaymentRequest.Data);
+        }
+
+        return NotFound();
     }
 
     [HttpPost]
@@ -45,19 +53,18 @@ public class PaymentsController : Controller
         var processPayResult = await _payService.ProcessPaymentAsync(payRequest);
         if (processPayResult.IsFailure)
         {
-            return StatusCode((int)processPayResult.Error.Code, processPayResult.Error.Message);
+            return StatusCode((int)processPayResult.Error!.Code, processPayResult.Error.Message);
         }
 
-        var res = processPayResult.Data;
-        return new OkObjectResult(new PostPaymentResponse
+        return Ok(new PostPaymentResponse
         {
-            Id = res.Id,
-            Amount = res.Amount,
-            Currency = res.Currency,
-            CardNumberLastFour = res.CardNumberLastFour,
-            ExpiryMonth = res.ExpiryMonth,
-            ExpiryYear = res.ExpiryYear,
-            Status = res.Status
+            Id = processPayResult.Data!.Id,
+            Amount = processPayResult.Data.Amount,
+            Currency = processPayResult.Data.Currency,
+            CardNumberLastFour = processPayResult.Data.CardNumberLastFour,
+            ExpiryMonth = processPayResult.Data.ExpiryMonth,
+            ExpiryYear = processPayResult.Data.ExpiryYear,
+            Status = processPayResult.Data.Status
         });
     }
 }
