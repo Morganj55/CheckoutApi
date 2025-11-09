@@ -8,5 +8,6 @@ public enum PaymentStatus
     Authorized,
     Declined,
     Rejected, 
-    Pending
+    Pending,
+    InternalError
 }

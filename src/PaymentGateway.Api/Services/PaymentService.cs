@@ -2,6 +2,7 @@
 
 using PaymentGateway.Api.Clients;
 using PaymentGateway.Api.Domain;
+using PaymentGateway.Api.Models;
 using PaymentGateway.Api.Models.Requests;
 using PaymentGateway.Api.Models.Responses;
 using PaymentGateway.Api.Utility;
@@ -60,7 +61,7 @@ namespace PaymentGateway.Api.Services
         {
             var paymentRecord = new PaymentRequestResponse(
                 Guid.NewGuid(),
-                Models.PaymentStatus.Pending,
+                PaymentStatus.Pending,
                 request.CardNumber,
                 request.ExpiryMonth,
                 request.ExpiryYear,
@@ -74,23 +75,36 @@ namespace PaymentGateway.Api.Services
                 return OperationResult<PaymentRequestResponse>.Failure(ErrorKind.Unexpected, "Could not add payment", null);
             }
 
-            // Process the payment with the acquiring bank
-            var bankResult = await _bankClient.ProcessPaymentAsync(request);
-            if (bankResult.IsFailure)
+            try
             {
-                return OperationResult<PaymentRequestResponse>.Failure(bankResult.Error!);
-            }
+                // Process the payment with the acquiring bank
+                var bankResult = await _bankClient.ProcessPaymentAsync(request);
+                if (bankResult.IsFailure)
+                {
+                    return OperationResult<PaymentRequestResponse>.Failure(bankResult.Error!);
+                }
 
-            // Update the payment record status based on the bank's response
-            var newPaymentStatus = bankResult.Data!.Authorized ? Models.PaymentStatus.Authorized : Models.PaymentStatus.Declined;
-            var updatePaymentResult = await _paymentRepository.UpdatePaymentStatus(paymentRecord.Id, newPaymentStatus);
-            if (updatePaymentResult.IsFailure)
+                // Update the payment record status based on the bank's response
+                var newPaymentStatus = bankResult.Data!.Authorized ? PaymentStatus.Authorized : PaymentStatus.Declined;
+                var updatePaymentResult = await _paymentRepository.UpdatePaymentStatus(paymentRecord.Id, newPaymentStatus);
+                if (updatePaymentResult.IsFailure)
+                {
+                    // Need a way to reconcile later, could do through logging of payment ID as it should exist within storage already?
+                    return OperationResult<PaymentRequestResponse>.Failure(ErrorKind.Transient, "Payment authorized but recording failed. We will reconcile.", HttpStatusCode.Accepted);
+                }
+
+                return OperationResult<PaymentRequestResponse>.Success(updatePaymentResult.Data!);
+            }
+            catch
             {
-                // Need a way to reconcile later, could do through logging of payment ID as it should exist within storage already?
-                return OperationResult<PaymentRequestResponse>.Failure(ErrorKind.Transient, "Payment authorized but recording failed. We will reconcile.", HttpStatusCode.Accepted);
-            }
+                var updateErrorRes = await _paymentRepository.UpdatePaymentStatus(paymentRecord.Id, PaymentStatus.InternalError);
+                if (updateErrorRes.IsFailure)
+                {
+                    // Need a way to reconcile later, could do through logging of payment ID as it should exist within storage already?
+                }
 
-            return OperationResult<PaymentRequestResponse>.Success(updatePaymentResult.Data!);
+                throw;
+            }
         }
 
         /// <summary>
