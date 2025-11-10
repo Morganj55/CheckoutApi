@@ -65,8 +65,7 @@ namespace PaymentGateway.Api.Clients
 
             if (resp.StatusCode == HttpStatusCode.ServiceUnavailable)
             {
-                var msg = await resp.Content.ReadAsStringAsync(ct);
-                return OperationResult<PostBankResponse>.Failure(ErrorKind.Transient, msg, resp.StatusCode);
+                return OperationResult<PostBankResponse>.Failure(ErrorKind.Transient,"Error contacting aquiring bank", resp.StatusCode);
             }
 
             // This throws an exception which will be caught by the global exception handler middleware

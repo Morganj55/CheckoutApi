@@ -99,7 +99,7 @@ public class PaymentsController : Controller
         if (processPayResult.IsFailure)
         {
             // Use the status code from the error object if available, otherwise default to a generic error
-            return StatusCode((int)processPayResult.Error.Code, processPayResult.Error.Message);
+            return StatusCode((int)processPayResult.Error!.Code!, processPayResult.Error.Message);
         }
 
         // Map the result data to the response model 
